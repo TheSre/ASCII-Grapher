@@ -15,16 +15,16 @@ void draw(char **out, int rows, int cols)
 {
     for(int i = 0; i <= rows; i++) {
         for(int j = 0; j <= cols; j++) {
-			if( j == cols) {
-				printf("\n");
-			} else {
-				if(out[i][j] == "#") {
-					printf("\033[0;31m");
-				} else {
-					printf("\033[0m");
-				}
-				printf("%c",out[i][j]);
-			}
+            if( j == cols) {
+                printf("\n");
+            } else {
+                if(out[i][j] == "#") {
+                    printf("\033[0;31m");
+                } else {
+                    printf("\033[0m");
+                }
+                printf("%c",out[i][j]);
+            }
         }
     }
 }
