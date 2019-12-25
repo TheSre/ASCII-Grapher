@@ -4,7 +4,7 @@
 void printWelcomeMessage()
 {
     // Check if ASCII.txt has been renamed or removed
-    if (system("cat ASCII.txt")) {
+    if (system("cat .ASCII.txt")) {
         system("clear");
         printf("Welcome to the GSGC!\nPlease enter a function to graph: ");
     }
