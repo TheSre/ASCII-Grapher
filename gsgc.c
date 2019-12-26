@@ -18,7 +18,7 @@ void draw(char **out, int rows, int cols)
             if( j == cols) {
                 printf("\n");
             } else {
-                if(out[i][j] == "#") {
+                if(out[i][j] == '#') {
                     printf("\033[0;31m");
                 } else {
                     printf("\033[0m");
