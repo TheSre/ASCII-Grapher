@@ -13,8 +13,9 @@ void printWelcomeMessage()
 
 void draw(char **out, int rows, int cols)
 {
-    for(int i = 0; i <= rows; i++) {
+    for(int i = 0; i < rows; i++) {
         for(int j = 0; j <= cols; j++) {
+            // Special case for new line
             if( j == cols) {
                 printf("\n");
             } else {
