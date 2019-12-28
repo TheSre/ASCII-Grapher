@@ -61,14 +61,6 @@ void draw(char **out, int rows, int cols)
 
 int main(void) 
 {
-    // TODO: possibly hardcode welcome message in?
-    //   char[6][43] welcomeMessage = {
-    //       {  ______     ______     ______     ______   },
-    //       { /\  ___\   /\  ___\   /\  ___\   /\  ___\  },
-    //       { \ \ \__ \  \ \___  \  \ \ \__ \  \ \ \____ },
-    //       {  \ \_____\  \/\_____\  \ \_____\  \ \_____\},
-    //       {   \/_____/   \/_____/   \/_____/   \/_____/}
-    //   };
     printWelcomeMessage();
 
     Function function; 
