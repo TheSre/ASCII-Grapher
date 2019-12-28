@@ -4,9 +4,6 @@
 
 #define DEFAULT_FUNCTION_BUFF_SIZE 50
 
-void printWelcomeMessage();
-void draw(char **out, int rows, int cols);
-
 typedef struct {
     char* buf;
     size_t length;
@@ -40,6 +37,12 @@ void getInput(Function* function, int *rows, int *cols)
     printf("%s, %d, %d\n", function->buf, *rows, *cols);
 }
 
+void build(char **out, Function *function, int rows, int cols)
+{
+    buildAxes(out, &function, rows, cols);
+    testPoints(out, &function, rows, cols);
+}
+
 void draw(char **out, int rows, int cols)
 {
     for(int i = 0; i < rows; i++) {
@@ -71,6 +74,8 @@ int main(void)
     int *cols = malloc(sizeof(int));
 
     getInput(&function, rows, cols);
-
+    char **out[rows + 1][cols + 1];
+    build(out, &function, rows, cols);
+    draw(out, rows, cols);
     // TODO: free malloc'ed stuff
 }
