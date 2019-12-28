@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
 #define DEFAULT_FUNCTION_BUFF_SIZE 50
 
@@ -8,7 +9,7 @@ void draw(char **out, int rows, int cols);
 
 typedef struct {
     char* buf;
-    int length;
+    size_t length;
 }Function;
 
 void printWelcomeMessage()
@@ -24,11 +25,16 @@ void getInput(Function* function, int *rows, int *cols)
 {
     printf("Please enter: \n");
     printf("\ta function to graph: ");
-    scanf("%s", function->buf);
+    function->length = getline(&(function->buf), &(function->length), stdin);
     printf("\twindow size (vertical): ");
     scanf("%d", rows);
     printf("\twindow size (horizontal): ");
     scanf("%d", cols);
+
+    if (function->length == -1) {
+        printf("Error reading in function");
+        exit(EXIT_FAILURE);
+    }
 
     // TODO: delete below (just for testing)
     printf("%s, %d, %d\n", function->buf, *rows, *cols);
@@ -64,8 +70,15 @@ int main(void)
     //       {   \/_____/   \/_____/   \/_____/   \/_____/}
     //   };
     printWelcomeMessage();
-    Function*  input= malloc(DEFAULT_FUNCTION_BUFF_SIZE);
+
+    Function function; 
+    function.buf = NULL; 
+    function.length = 0;
+
     int *rows = malloc(sizeof(int));
     int *cols = malloc(sizeof(int));
-    getInput(input, rows, cols);
+
+    getInput(&function, rows, cols);
+
+    // TODO: free malloc'ed stuff
 }
