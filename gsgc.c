@@ -37,10 +37,20 @@ void getInput(Function* function, int *rows, int *cols)
     printf("%s, %d, %d\n", function->buf, *rows, *cols);
 }
 
-void build(char **out, Function *function, int rows, int cols)
+void buildAxes(char **out, Function *function, int rows, int cols) {
+    // TODO: define body
+}
+void testPoints(char **out, Function *function, int rows, int cols) {
+    // TODO: define body
+}
+
+char** build(Function *function, int rows, int cols)
 {
-    buildAxes(out, &function, rows, cols);
-    testPoints(out, &function, rows, cols);
+    char **out; 
+    // TODO: allocate out on the heap
+    buildAxes(out, function, rows, cols);
+    testPoints(out, function, rows, cols);
+    return out;
 }
 
 void draw(char **out, int rows, int cols)
@@ -74,8 +84,11 @@ int main(void)
     int *cols = malloc(sizeof(int));
 
     getInput(&function, rows, cols);
-    char **out[rows + 1][cols + 1];
-    build(out, &function, rows, cols);
-    draw(out, rows, cols);
+    // TODO: for now, I removed the parameter for out bc this avoids compiler
+    // warnings & it seems to make more sense (organization-wise) to just build
+    // the array in the build function and then return it at the end
+    char **out = build(&function, *rows, *cols);
+    draw(out, *rows, *cols);
+
     // TODO: free malloc'ed stuff
 }
