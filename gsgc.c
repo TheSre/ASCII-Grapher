@@ -87,8 +87,8 @@ int main(void)
     // TODO: for now, I removed the parameter for out bc this avoids compiler
     // warnings & it seems to make more sense (organization-wise) to just build
     // the array in the build function and then return it at the end
-    char **out = build(&function, *rows, *cols);
-    draw(out, *rows, *cols);
+    // char **out = build(&function, *rows, *cols);
+    // draw(out, *rows, *cols);
 
     // TODO: free malloc'ed stuff
 }
