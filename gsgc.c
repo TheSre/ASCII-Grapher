@@ -108,20 +108,56 @@ void getInput(Function* function, int *rows, int *cols)
     }
 }
 
-void buildAxes(char **out, Function *function, int rows, int cols) {
-    // TODO: define body
-}
-void testPoints(char **out, Function *function, int rows, int cols) {
-    // TODO: define body
+void adjustSize(int *rows, int *cols)
+{ 
+    if(!((*rows) % 2)) {
+        (*rows)++;
+    }
+    if(!((*cols) % 2)) {
+        (*cols)++;
+    }
 }
 
-char** build(Function *function, int rows, int cols)
+void buildAxes(char **out, TreeNode root, int *rows, int *cols)
 {
-    char **out; 
-    // TODO: allocate out on the heap
-    buildAxes(out, function, rows, cols);
-    testPoints(out, function, rows, cols);
-    return out;
+    for(int i = 0; i < *rows; i++) {
+        for(int j = 0; j < *cols; j++) {
+            int a = (i == ((*rows) + 1)/2);
+            int b = (j == ((*cols) + 1)/2);
+            if(a && b) {
+                out[i][j] = '+';
+            }
+            else if(a) {
+                out[i][j] = '-';
+            }
+            else if(b) {
+                out[i][j] = '|';
+            }
+        }
+    } 
+}
+void testPoints(char **out, TreeNode root, int *rows, int *cols)
+{
+    int halfAxis = ((*rows) - 1) / 2;
+    float testValue = 0;
+    int outIndex = 0;
+
+    for(int i = (0 - halfAxis); i <= halfAxis; i++) {
+        testValue = calculate(root, i);
+        if((testValue % 1) >= 0.5) {
+            outIndex = testValue + 1;
+        }
+        else {
+            outIndex = testValue;
+        }
+        out[i + halfAxis][outIndex] = '#';
+    }
+}
+
+void build(char **out, TreeNode root, int *rows, int *cols)
+{
+    buildAxes(out, root, rows, cols);
+    testPoints(out, root, rows, cols);
 }
 
 void draw(char **out, int rows, int cols)
@@ -154,6 +190,11 @@ int main(void)
     int *rows = malloc(sizeof(int));
     int *cols = malloc(sizeof(int));
 
+    if(rows == NULL || cols == NULL) {
+        fprintf(stderr, "Malloc Error");
+        return -1;
+    }
+
     getInput(&function, rows, cols);
     char** splitFunctionResult = splitFunction(&function);
     
@@ -163,12 +204,25 @@ int main(void)
         printf("%s\n", splitFunctionResult[i++]);
     }
     // TODO: delete ^
+    adjustSize(rows, cols);
 
-    // TODO: for now, I removed the parameter for out bc this avoids compiler
-    // warnings & it seems to make more sense (organization-wise) to just build
-    // the array in the build function and then return it at the end
-    // char **out = build(&function, *rows, *cols);
-    // draw(out, *rows, *cols);
+    char **out = malloc(*rows * sizeof(int*));
+
+    if(out == NULL) {
+        fprintf(stderr, "Malloc Error");
+        return -1;
+    }
+
+    for(int i = 0; i < *rows; i++) {
+        out[i] = malloc(*cols * sizeof(char));
+        if(out[i] == NULL) {
+            fprintf(stderr, "Malloc Error");
+            return -1;
+        }
+    }
+
+    build(out, root, *rows, *cols);
+    draw(out, *rows, *cols);
 
     // TODO: free malloc'ed stuff
     return 0;
