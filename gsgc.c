@@ -4,13 +4,6 @@
 #include <ctype.h>
 #include <string.h>
 
-#define DEFAULT_FUNCTION_BUFF_SIZE 50
-
-typedef struct {
-    char* buf;
-    size_t length;
-}Function;
-
 union Data {
     // Numeric values will be stored as doubles
     double number;
@@ -23,6 +16,89 @@ typedef struct TreeNode {
     struct TreeNode* left;
     struct TreeNode* right;
 } TreeNode;
+
+typedef struct Function {
+    char* buf;
+    size_t length;
+}Function;
+
+void draw(char **out, int rows, int cols)
+{
+    for(int i = 0; i < rows; i++) {
+        for(int j = 0; j <= cols; j++) {
+            // Special case for new line
+            if( j == cols) {
+                printf("\n");
+            } else {
+                if(out[i][j] == '#') {
+                    printf("\033[0;31m");
+                } else {
+                    printf("\033[0m");
+                }
+                printf("%c",out[i][j]);
+            }
+        }
+    }
+}
+
+void buildAxes(char **out, TreeNode* root, int *rows, int *cols)
+{
+    for(int i = 0; i < *rows; i++) {
+        for(int j = 0; j < *cols; j++) {
+            int a = (i == ((*rows) + 1)/2);
+            int b = (j == ((*cols) + 1)/2);
+            if(a && b) {
+                out[i][j] = '+';
+            }
+            else if(a) {
+                out[i][j] = '-';
+            }
+            else if(b) {
+                out[i][j] = '|';
+            }
+        }
+    } 
+}
+
+void testPoints(char **out, TreeNode* root, int *rows, int *cols)
+{
+    int halfAxis = ((*rows) - 1) / 2;
+    float testValue = 0;
+    int outIndex = 0;
+
+    for(int i = (0 - halfAxis); i <= halfAxis; i++) {
+        // testValue = calculate(root, i); TODO: uncomment when defined
+        // (commented for now so that code compiles)
+        outIndex = (int)round(testValue);
+        // TODO: I commented out the below code because it was giving compiler
+        // errors. rint() should work, but it might have different behavior than
+        // we want in the case of .5. We can talk this over
+
+        // if((testValue % 1) >= 0.5) {
+        //     outIndex = testValue + 1;
+        // }
+        // else {
+        //     outIndex = testValue;
+        // }
+        out[i + halfAxis][outIndex] = '#';
+    }
+}
+
+void build(char **out, TreeNode* root, int *rows, int *cols)
+{
+    buildAxes(out, root, rows, cols);
+    testPoints(out, root, rows, cols);
+}
+
+void adjustSize(int *rows, int *cols)
+{ 
+    if(!((*rows) % 2)) {
+        (*rows)++;
+    }
+    if(!((*cols) % 2)) {
+        (*cols)++;
+    }
+}
 
 // TODO: be sure to free up entire tree
 TreeNode* buildFunctionTree(Function* function)
@@ -108,77 +184,6 @@ void getInput(Function* function, int *rows, int *cols)
     }
 }
 
-void adjustSize(int *rows, int *cols)
-{ 
-    if(!((*rows) % 2)) {
-        (*rows)++;
-    }
-    if(!((*cols) % 2)) {
-        (*cols)++;
-    }
-}
-
-void buildAxes(char **out, TreeNode root, int *rows, int *cols)
-{
-    for(int i = 0; i < *rows; i++) {
-        for(int j = 0; j < *cols; j++) {
-            int a = (i == ((*rows) + 1)/2);
-            int b = (j == ((*cols) + 1)/2);
-            if(a && b) {
-                out[i][j] = '+';
-            }
-            else if(a) {
-                out[i][j] = '-';
-            }
-            else if(b) {
-                out[i][j] = '|';
-            }
-        }
-    } 
-}
-void testPoints(char **out, TreeNode root, int *rows, int *cols)
-{
-    int halfAxis = ((*rows) - 1) / 2;
-    float testValue = 0;
-    int outIndex = 0;
-
-    for(int i = (0 - halfAxis); i <= halfAxis; i++) {
-        testValue = calculate(root, i);
-        if((testValue % 1) >= 0.5) {
-            outIndex = testValue + 1;
-        }
-        else {
-            outIndex = testValue;
-        }
-        out[i + halfAxis][outIndex] = '#';
-    }
-}
-
-void build(char **out, TreeNode root, int *rows, int *cols)
-{
-    buildAxes(out, root, rows, cols);
-    testPoints(out, root, rows, cols);
-}
-
-void draw(char **out, int rows, int cols)
-{
-    for(int i = 0; i < rows; i++) {
-        for(int j = 0; j <= cols; j++) {
-            // Special case for new line
-            if( j == cols) {
-                printf("\n");
-            } else {
-                if(out[i][j] == '#') {
-                    printf("\033[0;31m");
-                } else {
-                    printf("\033[0m");
-                }
-                printf("%c",out[i][j]);
-            }
-        }
-    }
-}
-
 int main(void) 
 {
     printWelcomeMessage();
@@ -197,6 +202,7 @@ int main(void)
 
     getInput(&function, rows, cols);
     char** splitFunctionResult = splitFunction(&function);
+    TreeNode* root = buildFunctionTree(&function);
     
     // TODO: delete v (for testing)
     int i = 0;
@@ -221,7 +227,7 @@ int main(void)
         }
     }
 
-    build(out, root, *rows, *cols);
+    build(out, root, rows, cols);
     draw(out, *rows, *cols);
 
     // TODO: free malloc'ed stuff
