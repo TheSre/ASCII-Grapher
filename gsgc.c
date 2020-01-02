@@ -18,7 +18,7 @@ union Data {
     char opOrVar;
 };
 
-typedef struct {
+typedef struct TreeNode {
     union Data data;
     struct TreeNode* left;
     struct TreeNode* right;
@@ -51,7 +51,7 @@ TreeNode* buildFunctionTree(Function* function)
                 if (isdigit(function->buf[i])) {
                     if (!curr->left) {
                         curr->left = malloc(sizeof(TreeNode));
-                        // curr.left.data.number = atof(function->buf[i]);
+                        curr->left->data.number = atof(&function->buf[i]);
                         // TODO: ^ something to discuss: need a way of parsing
                         // numbers -- if we had 256 + 2, 256 wouldn't be
                         // properly parsed w/ current method. Might need to use
