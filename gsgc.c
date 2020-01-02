@@ -41,25 +41,6 @@ void draw(char **out, int rows, int cols)
     }
 }
 
-void buildAxes(char **out, TreeNode* root, int *rows, int *cols)
-{
-    for(int i = 0; i < *rows; i++) {
-        for(int j = 0; j < *cols; j++) {
-            int a = (i == ((*rows) + 1)/2);
-            int b = (j == ((*cols) + 1)/2);
-            if(a && b) {
-                out[i][j] = '+';
-            }
-            else if(a) {
-                out[i][j] = '-';
-            }
-            else if(b) {
-                out[i][j] = '|';
-            }
-        }
-    } 
-}
-
 void testPoints(char **out, TreeNode* root, int *rows, int *cols)
 {
     int halfAxis = ((*rows) - 1) / 2;
@@ -82,6 +63,25 @@ void testPoints(char **out, TreeNode* root, int *rows, int *cols)
         // }
         out[i + halfAxis][outIndex] = '#';
     }
+}
+
+void buildAxes(char **out, TreeNode* root, int *rows, int *cols)
+{
+    for(int i = 0; i < *rows; i++) {
+        for(int j = 0; j < *cols; j++) {
+            int a = (i == ((*rows) + 1)/2);
+            int b = (j == ((*cols) + 1)/2);
+            if(a && b) {
+                out[i][j] = '+';
+            }
+            else if(a) {
+                out[i][j] = '-';
+            }
+            else if(b) {
+                out[i][j] = '|';
+            }
+        }
+    } 
 }
 
 void build(char **out, TreeNode* root, int *rows, int *cols)
@@ -159,15 +159,6 @@ char** splitFunction(Function* function)
     return splitFunction;
 }
 
-void printWelcomeMessage()
-{
-    // Check if ASCII.txt has been renamed or removed
-    if (system("cat .ASCII.txt")) {
-        system("clear");
-        printf("Welcome to the GSGC!\n");
-    }
-}
-
 void getInput(Function* function, int *rows, int *cols) 
 {
     printf("Please enter: \n");
@@ -181,6 +172,15 @@ void getInput(Function* function, int *rows, int *cols)
     if (function->length == -1) {
         printf("Error reading in function");
         exit(EXIT_FAILURE);
+    }
+}
+
+void printWelcomeMessage()
+{
+    // Check if ASCII.txt has been renamed or removed
+    if (system("cat .ASCII.txt")) {
+        system("clear");
+        printf("Welcome to the GSGC!\n");
     }
 }
 
