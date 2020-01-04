@@ -51,16 +51,6 @@ void testPoints(char **out, TreeNode* root, int *rows, int *cols)
         // testValue = calculate(root, i); TODO: uncomment when defined
         // (commented for now so that code compiles)
         outIndex = (int)round(testValue);
-        // TODO: I commented out the below code because it was giving compiler
-        // errors. rint() should work, but it might have different behavior than
-        // we want in the case of .5. We can talk this over
-
-        // if((testValue % 1) >= 0.5) {
-        //     outIndex = testValue + 1;
-        // }
-        // else {
-        //     outIndex = testValue;
-        // }
         out[i + halfAxis][outIndex] = '#';
     }
 }
