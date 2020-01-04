@@ -91,7 +91,6 @@ void testPoints(char **out, TreeNode *root, int *rows, int *cols)
 
     for(int i = (0 - halfAxis); i <= halfAxis; i++) {
         testValue = calculate(root, i);
-        // (commented for now so that code compiles)
         outIndex = (int)round(testValue);
         out[i + halfAxis][outIndex] = '#';
     }
