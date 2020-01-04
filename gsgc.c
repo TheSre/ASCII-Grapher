@@ -13,6 +13,10 @@ union Data {
 
 typedef struct TreeNode {
     union Data data;
+    //below is to determine between num/op/var in case of ASCII collisions for chars (ie 43 instead of +) 
+    //for num = 0, for op/var = 1
+    //TODO: talk this over and determine if it is needed
+    int type;
     struct TreeNode* left;
     struct TreeNode* right;
 } TreeNode;
@@ -22,12 +26,12 @@ typedef struct Function {
     size_t length;
 }Function;
 
-void draw(char **out, int rows, int cols)
+void draw(char **out, int *rows, int *cols)
 {
-    for(int i = 0; i < rows; i++) {
-        for(int j = 0; j <= cols; j++) {
+    for(int i = 0; i < *rows; i++) {
+        for(int j = 0; j <= *cols; j++) {
             // Special case for new line
-            if( j == cols) {
+            if( j == *cols) {
                 printf("\n");
             } else {
                 if(out[i][j] == '#') {
@@ -41,14 +45,52 @@ void draw(char **out, int rows, int cols)
     }
 }
 
-void testPoints(char **out, TreeNode* root, int *rows, int *cols)
+double calculate(TreeNode *root, int independent)
+{
+    TreeNode *curr = malloc(sizeof(TreeNode));
+    double value = 0;
+    if(curr->type) {
+        switch(curr->data.opOrVar) {
+            case '+':
+                value = calculate(curr->left, independent) + calculate(curr->right, independent);
+                break;
+            //below assumes left-right storage for subtraction
+            //TODO: make sure this is the case or flip
+            case '-':
+                value = calculate(curr->left, independent) - calculate(curr->right, independent);
+                break;
+            case '*':
+                value = calculate(curr->left, independent) * calculate(curr->right, independent);
+                break;
+            //below assumes left/right storage for division
+            //TODO: make sure this is the case or flip
+            case '/':
+                value = calculate(curr->left, independent) / calculate(curr->right, independent);
+                break;
+            //below assumes left^right storage for exponentials
+            //TODO: make sure this is the case or flip
+            case '^':
+                value = pow(calculate(curr->left, independent),calculate(curr->right, independent));
+                break;
+            //variable case, currently all non-op non-num values will be treated as indep. var
+            default:
+                value = independent;
+        }
+    }
+    else {
+        value = curr->data.number;
+    }
+return value;
+}
+
+void testPoints(char **out, TreeNode *root, int *rows, int *cols)
 {
     int halfAxis = ((*rows) - 1) / 2;
-    float testValue = 0;
+    double testValue = 0;
     int outIndex = 0;
 
     for(int i = (0 - halfAxis); i <= halfAxis; i++) {
-        // testValue = calculate(root, i); TODO: uncomment when defined
+        testValue = calculate(root, i);
         // (commented for now so that code compiles)
         outIndex = (int)round(testValue);
         out[i + halfAxis][outIndex] = '#';
@@ -218,7 +260,7 @@ int main(void)
     }
 
     build(out, root, rows, cols);
-    draw(out, *rows, *cols);
+    draw(out, rows, cols);
 
     // TODO: free malloc'ed stuff
     return 0;
