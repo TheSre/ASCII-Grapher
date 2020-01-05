@@ -28,10 +28,10 @@ typedef struct Function {
 
 void draw(char **out, int *rows, int *cols)
 {
-    for(int i = 0; i < *rows; i++) {
-        for(int j = 0; j <= *cols; j++) {
+    for(int j = 0; j < *rows; j++) {
+        for(int i = 0; i <= *cols; i++) {
             // Special case for new line
-            if( j == *cols) {
+            if( i == *cols) {
                 printf("\n");
             } else {
                 if(out[i][j] == '#') {
@@ -85,23 +85,30 @@ return value;
 
 void testPoints(char **out, TreeNode *root, int *rows, int *cols)
 {
-    int halfAxis = ((*rows) - 1) / 2;
+    int halfRows = ((*rows) - 1) / 2;
+    int halfCols = ((*cols) - 1) / 2;
     double testValue = 0;
     int outIndex = 0;
-
-    for(int i = (0 - halfAxis); i <= halfAxis; i++) {
+    
+    // testing v
+    printf("List of points:\n");
+    // testing ^
+    for(int i = (0 - halfRows); i <= halfRows; i++) {
         testValue = calculate(root, i);
         outIndex = (int)round(testValue);
-        out[i + halfAxis][outIndex] = '#';
+        out[i + halfRows][outIndex + halfCols] = '#';
+        //testing v
+        printf("%d, %d \n", i , outIndex);
+        //testing ^
     }
 }
 
 void buildAxes(char **out, TreeNode* root, int *rows, int *cols)
 {
-    for(int i = 0; i < *rows; i++) {
-        for(int j = 0; j < *cols; j++) {
-            int a = (i == ((*rows) + 1)/2);
-            int b = (j == ((*cols) + 1)/2);
+    for(int j = 0; j < *rows; j++) {
+        for(int i = 0; i < *cols; i++) {
+            int a = ((j + 1) == ((*rows) + 1)/2);
+            int b = ((i + 1) == ((*cols) + 1)/2);
             if(a && b) {
                 out[i][j] = '+';
             }
@@ -241,8 +248,6 @@ int main(void)
         printf("%s\n", splitFunctionResult[i++]);
     }
     // TODO: delete ^
-    adjustSize(rows, cols);
-
     char **out = malloc(*rows * sizeof(int*));
 
     if(out == NULL) {
