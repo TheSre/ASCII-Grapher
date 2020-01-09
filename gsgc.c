@@ -138,63 +138,95 @@ void adjustSize(int *rows, int *cols)
     }
 }
 
-// TODO: be sure to free up entire tree
-TreeNode* buildFunctionTree(Function* function)
+/*
+ * Sets nodeToSet's data field to a variable or number depending on what
+ * varOrNumber contains.
+ */
+void setVarOrNumber(char* varOrNumber, TreeNode* nodeToSet) 
 {
-    TreeNode* curr = malloc(sizeof(TreeNode)); 
-    // TODO: finish parsing func
-    for (int i = 0; i < (function->length); ++i) {
-        switch (function->buf[i]) {
-            case '+': 
-                curr->data.opOrVar = '+';
-                break;
-            case '-': 
-                curr->data.opOrVar = '-';
-                break;
-            case '*': 
-                curr->data.opOrVar = '*';
-                break;
-            case '/': 
-                curr->data.opOrVar = '/';
-                break;
-            case '^': 
-                curr->data.opOrVar = '^';
-                break;
-            // Is a variable or number in this case
-            default:
-                if (isdigit(function->buf[i])) {
-                    if (!curr->left) {
-                        curr->left = malloc(sizeof(TreeNode));
-                        curr->left->data.number = atof(&function->buf[i]);
-                        // TODO: ^ something to discuss: need a way of parsing
-                        // numbers -- if we had 256 + 2, 256 wouldn't be
-                        // properly parsed w/ current method. Might need to use
-                        // commas after all
-                    }
-                }
-                break;
-        }
+    if (isdigit(varOrNumber[0])) {
+        nodeToSet->data.number = atof(varOrNumber);
     }
-    // TODO: return proper val
-    return NULL;
+    else {
+        nodeToSet->data.opOrVar = varOrNumber[0];
+    }
 }
 
+/*
+ * Recursive helper method for building the function tree. term is used to
+ * indicate which term in the function is currently being processed. 
+ */
+TreeNode* buildFunctionTreeHelper(char*** term)
+{
+    // Check if past the last term
+    if (!(**term)) {
+        return NULL;
+    }
+    TreeNode* curr = malloc(sizeof(TreeNode));
+    // Only need to look at the first character of each term
+    switch (***term) {
+        case '+': 
+        case '-': 
+        case '*': 
+        case '/': 
+        case '^': 
+            curr->data.opOrVar = ***term;
+
+            // Move on to next term
+            ++(*term);
+            curr->left = buildFunctionTreeHelper(term);
+
+            // Move on to next term
+            ++(*term);
+            curr->right = buildFunctionTreeHelper(term);
+            break;
+        default:
+            // Is a variable or number in this case
+            setVarOrNumber(**term, curr);
+            curr->left = NULL;
+            curr->right = NULL;
+            break;
+    }
+    return curr;
+}
+
+// TODO: be sure to free up entire tree
+TreeNode* buildFunctionTree(char** splitFunction)
+{
+    // TreeNode* curr = malloc(sizeof(TreeNode)); 
+    // // If there's more than 1 term, the first term must be an operator
+    // if (numberOfTerms > 1) {
+    //     curr->data.opOrVar = splitFunction[0][0];
+    //     return buildFunctionTreeHelper(splitFunction, numberOfTerms, curr); 
+    // }
+    // Otherwise, it's a number or variable
+    // setVarOrNumber(splitFunction[0], curr);
+    return buildFunctionTreeHelper(&splitFunction);
+}
+
+/* Splits the given function and stores it in splitFunctionStorage. 
+ * Returns the number of terms in the newly-split function.
+ */
 char** splitFunction(Function* function) 
 {
+    // This is the highest number of terms the function could have based on its
+    // length (this would be the case where each term is a single character). 1
+    // is added to leave space for terminating w/ NULL.
+    int splitFunctionAllocationSize = (function->length - (function->length / 2)) + 1;
     // TODO: free up splitFunction
-    // This is the length of the function string with its commas removed
-    // (This can be larger than necessary (e.g. if one of the terms is a
-    // multi-digit value like 122.)
-    int splitFunctionLength = function->length - (function->length / 2);
-    char** splitFunction = malloc(sizeof((splitFunctionLength * sizeof(char*))));
+    char** splitFunctionStorage = malloc(
+            sizeof((splitFunctionAllocationSize * sizeof(char*))));
+
     char delim[1] = ",";
-    splitFunction[0] = strtok(function->buf, delim);
+    splitFunctionStorage[0] = strtok(function->buf, delim);
 
     int i = 0;
-    while (splitFunction[i++]) {
-        splitFunction[i] = strtok(NULL, delim);
+    // TODO: left off here: check that this loop isn't accessing mem outside of
+    // that which has been malloc'd
+    while (splitFunctionStorage[i]) {
+        splitFunctionStorage[++i] = strtok(NULL, delim);
     }
-    return splitFunction;
+    return splitFunctionStorage;
 }
 
 void getInput(Function* function, int *rows, int *cols) 
@@ -239,32 +271,38 @@ int main(void)
     }
 
     getInput(&function, rows, cols);
-    char** splitFunctionResult = splitFunction(&function);
-    TreeNode* root = buildFunctionTree(&function);
-    
+    char** splitFunctionStorage = splitFunction(&function);
+
     // TODO: delete v (for testing)
     int i = 0;
-    while (splitFunctionResult[i]) {
-        printf("%s\n", splitFunctionResult[i++]);
+    while (splitFunctionStorage[i]) {
+        printf("\n%s\n", splitFunctionStorage[i++]);
     }
-    // TODO: delete ^
-    char **out = malloc(*rows * sizeof(int*));
+    printf("Got here w/ no seg fault\n");
+    // TODO: delete ^ (for testing)
 
-    if(out == NULL) {
-        fprintf(stderr, "Malloc Error");
-        return -1;
-    }
+    TreeNode* root = buildFunctionTree(splitFunctionStorage);
+    
+    printf("got thru building tree\n");// TODO: delete
 
-    for(int i = 0; i < *rows; i++) {
-        out[i] = malloc(*cols * sizeof(char));
-        if(out[i] == NULL) {
-            fprintf(stderr, "Malloc Error");
-            return -1;
-        }
-    }
+    // TODO: uncomment
+    // char **out = malloc(*rows * sizeof(int*));
 
-    build(out, root, rows, cols);
-    draw(out, rows, cols);
+    // if(out == NULL) {
+    //     fprintf(stderr, "Malloc Error");
+    //     return -1;
+    // }
+
+    // for(int i = 0; i < *rows; i++) {
+    //     out[i] = malloc(*cols * sizeof(char));
+    //     if(out[i] == NULL) {
+    //         fprintf(stderr, "Malloc Error");
+    //         return -1;
+    //     }
+    // }
+
+    // build(out, root, rows, cols);
+    // draw(out, rows, cols);
 
     // TODO: free malloc'ed stuff
     return 0;
