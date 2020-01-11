@@ -221,8 +221,6 @@ char** splitFunction(Function* function)
     splitFunctionStorage[0] = strtok(function->buf, delim);
 
     int i = 0;
-    // TODO: left off here: check that this loop isn't accessing mem outside of
-    // that which has been malloc'd
     while (splitFunctionStorage[i]) {
         splitFunctionStorage[++i] = strtok(NULL, delim);
     }
