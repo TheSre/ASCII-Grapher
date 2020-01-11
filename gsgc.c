@@ -28,20 +28,16 @@ typedef struct Function {
 
 void draw(char **out, int *rows, int *cols)
 {
-    for(int j = 0; j < *rows; j++) {
-        for(int i = 0; i <= *cols; i++) {
-            // Special case for new line
-            if( i == *cols) {
-                printf("\n");
+    for(int i = 0; i < *rows; i++) {
+        for(int j = 0; j < *cols; j++) {
+            if(out[i][j] == '#') {
+                printf("\033[0;31m");
             } else {
-                if(out[i][j] == '#') {
-                    printf("\033[0;31m");
-                } else {
-                    printf("\033[0m");
-                }
-                printf("%c",out[i][j]);
+                printf("\033[0m");
             }
+            printf("%c",out[i][j]);
         }
+        printf("\n");
     }
 }
 
@@ -85,30 +81,37 @@ return value;
 
 void testPoints(char **out, TreeNode *root, int *rows, int *cols)
 {
+    printf("Testing points...");
     int halfRows = ((*rows) - 1) / 2;
     int halfCols = ((*cols) - 1) / 2;
     double testValue = 0;
-    int outIndex = 0;
-    
+    int outValue = 0;
+    int j = 0;
+
     // testing v
+    printf("rows: %d, cols: %d \n", *rows, *cols);
     printf("List of points:\n");
     // testing ^
-    for(int i = (0 - halfRows); i <= halfRows; i++) {
-        testValue = calculate(root, i);
-        outIndex = (int)round(testValue);
-        out[i + halfRows][outIndex + halfCols] = '#';
-        //testing v
-        printf("%d, %d \n", i , outIndex);
-        //testing ^
+    for(int i = (0 - halfCols); i <= halfCols; i = i + 2) {
+        j = i / 2;
+        testValue = calculate(root, j);
+        outValue = (int)round(testValue);
+        if((outValue + halfRows) >= 0 || (outValue + halfRows) < *rows) {
+            out[outValue + halfRows][i + halfCols] = '#';
+        }
+        printf("%d, %d \n", j , outValue); //Testing
     }
 }
 
 void buildAxes(char **out, TreeNode* root, int *rows, int *cols)
 {
-    for(int j = 0; j < *rows; j++) {
-        for(int i = 0; i < *cols; i++) {
-            int a = ((j + 1) == ((*rows) + 1)/2);
-            int b = ((i + 1) == ((*cols) + 1)/2);
+    printf("Building Axes...\n"); //Testing
+    int a = 0;
+    int b = 0;
+    for(int i = 0; i < *rows; i++) {
+        for(int j = 0; j < *cols; j++) {
+            a = ((i + 1) == ((*rows) + 1)/2);
+            b = ((j + 1) == ((*cols) + 1)/2);
             if(a && b) {
                 out[i][j] = '+';
             }
@@ -130,12 +133,14 @@ void build(char **out, TreeNode* root, int *rows, int *cols)
 
 void adjustSize(int *rows, int *cols)
 { 
+    printf("Adjusting size...\n");
     if(!((*rows) % 2)) {
         (*rows)++;
     }
     if(!((*cols) % 2)) {
         (*cols)++;
     }
+    *cols = (2 * (*cols)) - 1;
 }
 
 // TODO: be sure to free up entire tree
@@ -163,7 +168,7 @@ TreeNode* buildFunctionTree(Function* function)
             // Is a variable or number in this case
             default:
                 if (isdigit(function->buf[i])) {
-                    if (!curr->left) {
+                    if (!(curr->left)) {
                         curr->left = malloc(sizeof(TreeNode));
                         curr->left->data.number = atof(&function->buf[i]);
                         // TODO: ^ something to discuss: need a way of parsing
@@ -239,6 +244,7 @@ int main(void)
     }
 
     getInput(&function, rows, cols);
+    adjustSize(rows, cols);
     char** splitFunctionResult = splitFunction(&function);
     TreeNode* root = buildFunctionTree(&function);
     
@@ -248,6 +254,7 @@ int main(void)
         printf("%s\n", splitFunctionResult[i++]);
     }
     // TODO: delete ^
+
     char **out = malloc(*rows * sizeof(int*));
 
     if(out == NULL) {
