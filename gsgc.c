@@ -129,6 +129,21 @@ void buildAxes(char **out, TreeNode* root, int rows, int cols)
 
 void build(char **out, TreeNode* root, int rows, int cols)
 {
+    char **out = malloc(rows * sizeof(int*));
+
+    if(out == NULL) {
+        fprintf(stderr, "Malloc Error");
+        return -1;
+    }
+
+    for(int i = 0; i < rows; i++) {
+        out[i] = malloc(cols * sizeof(char));
+        if(out[i] == NULL) {
+            fprintf(stderr, "Malloc Error");
+            return -1;
+        }
+    }
+
     buildAxes(out, root, rows, cols);
     testPoints(out, root, rows, cols);
 }
@@ -258,6 +273,7 @@ int main(void)
     getInput(&function, &rows, &cols);
     adjustSize(&rows, &cols);
     char** splitFunctionResult = splitFunction(&function);
+    
     // TODO: be sure to free up entire tree
     TreeNode* root = buildFunctionTree(splitFunctionStorage, 0);
     printf("got thru building tree\n");// TODO: delete
@@ -269,23 +285,7 @@ int main(void)
     }
     // TODO: delete ^ 
 
-    char **out = malloc(rows * sizeof(int*));
-
-    if(out == NULL) {
-        fprintf(stderr, "Malloc Error");
-        return -1;
-    }
-
-    for(int i = 0; i < rows; i++) {
-        out[i] = malloc(cols * sizeof(char));
-        if(out[i] == NULL) {
-            fprintf(stderr, "Malloc Error");
-            return -1;
-        }
-    }
-
-
-    build(out, root, rows, cols);
+    char **out = build(out, root, rows, cols);
     draw(out, rows, cols);
 
     // TODO: free malloc'ed stuff
