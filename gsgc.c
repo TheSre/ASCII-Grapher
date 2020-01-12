@@ -156,7 +156,7 @@ void setVarOrNumber(char* varOrNumber, TreeNode* nodeToSet)
  * Recursive helper method for building the function tree. term is used to
  * indicate which term in the function is currently being processed. 
  */
-TreeNode* buildFunctionTreeHelper(char** function, int termIndex)
+TreeNode* buildFunctionTree(char** function, int termIndex)
 {
     // Check if past the last term
     if (!function[termIndex]) {
@@ -174,11 +174,11 @@ TreeNode* buildFunctionTreeHelper(char** function, int termIndex)
 
             // Move on to next term
             ++termIndex;
-            curr->left = buildFunctionTreeHelper(function, termIndex);
+            curr->left = buildFunctionTree(function, termIndex);
 
             // Move on to next term
             ++termIndex;
-            curr->right = buildFunctionTreeHelper(function, termIndex);
+            curr->right = buildFunctionTree(function, termIndex);
             break;
         default:
             // Is a variable or number in this case
@@ -188,20 +188,6 @@ TreeNode* buildFunctionTreeHelper(char** function, int termIndex)
             break;
     }
     return curr;
-}
-
-// TODO: be sure to free up entire tree
-TreeNode* buildFunctionTree(char** splitFunction)
-{
-    // TreeNode* curr = malloc(sizeof(TreeNode)); 
-    // // If there's more than 1 term, the first term must be an operator
-    // if (numberOfTerms > 1) {
-    //     curr->data.opOrVar = splitFunction[0][0];
-    //     return buildFunctionTreeHelper(splitFunction, numberOfTerms, curr); 
-    // }
-    // Otherwise, it's a number or variable
-    // setVarOrNumber(splitFunction[0], curr);
-    return buildFunctionTreeHelper(splitFunction, 0);
 }
 
 /* Splits the given function and stores it in splitFunctionStorage. 
@@ -279,7 +265,8 @@ int main(void)
     printf("Got here w/ no seg fault\n");
     // TODO: delete ^ (for testing)
 
-    TreeNode* root = buildFunctionTree(splitFunctionStorage);
+    // TODO: be sure to free up entire tree
+    TreeNode* root = buildFunctionTree(splitFunctionStorage, 0);
     
     printf("got thru building tree\n");// TODO: delete
 
