@@ -13,12 +13,11 @@ union Data {
 
 typedef struct TreeNode {
     union Data data;
-    //below is to determine between num/op/var in case of ASCII collisions for chars (ie 43 instead of +) 
-    //for num = 0, for op/var = 1
-    //TODO: talk this over and determine if it is needed
+    // below is to determine between num/op/var in case of ASCII collisions for 
+    // chars (ie 43 instead of +) 
+    // for num = 0, for op/var = 1
     int type;
-    struct TreeNode* left;
-    struct TreeNode* right;
+    struct TreeNode* left; struct TreeNode* right;
 } TreeNode;
 
 typedef struct Function {
@@ -26,22 +25,18 @@ typedef struct Function {
     size_t length;
 }Function;
 
-void draw(char **out, int *rows, int *cols)
+void draw(char **out, int rows, int cols)
 {
-    for(int j = 0; j < *rows; j++) {
-        for(int i = 0; i <= *cols; i++) {
-            // Special case for new line
-            if( i == *cols) {
-                printf("\n");
+    for(int i = 0; i < rows; i++) {
+        for(int j = 0; j < cols; j++) {
+            if(out[i][j] == '#') {
+                printf("\033[0;31m");
             } else {
-                if(out[i][j] == '#') {
-                    printf("\033[0;31m");
-                } else {
-                    printf("\033[0m");
-                }
-                printf("%c",out[i][j]);
+                printf("\033[0m");
             }
+            printf("%c",out[i][j]);
         }
+        printf("\n");
     }
 }
 
@@ -52,27 +47,30 @@ double calculate(TreeNode *root, int independent)
     if(curr->type) {
         switch(curr->data.opOrVar) {
             case '+':
-                value = calculate(curr->left, independent) + calculate(curr->right, independent);
+                value = calculate(curr->left, independent) 
+                        + calculate(curr->right, independent);
                 break;
-            //below assumes left-right storage for subtraction
-            //TODO: make sure this is the case or flip
+            // below assumes left-right storage for subtraction
             case '-':
-                value = calculate(curr->left, independent) - calculate(curr->right, independent);
+                value = calculate(curr->left, independent) 
+                        - calculate(curr->right, independent);
                 break;
             case '*':
-                value = calculate(curr->left, independent) * calculate(curr->right, independent);
+                value = calculate(curr->left, independent) 
+                        * calculate(curr->right, independent);
                 break;
-            //below assumes left/right storage for division
-            //TODO: make sure this is the case or flip
+            // below assumes left/right storage for division
             case '/':
-                value = calculate(curr->left, independent) / calculate(curr->right, independent);
+                value = calculate(curr->left, independent) 
+                        / calculate(curr->right, independent);
                 break;
-            //below assumes left^right storage for exponentials
-            //TODO: make sure this is the case or flip
+            // below assumes left^right storage for exponentials
             case '^':
-                value = pow(calculate(curr->left, independent),calculate(curr->right, independent));
+                value = pow(calculate(curr->left, independent), 
+                        calculate(curr->right, independent));
                 break;
-            //variable case, currently all non-op non-num values will be treated as indep. var
+            // variable case, currently all non-op non-num values will be treated 
+            // as indep. var
             default:
                 value = independent;
         }
@@ -83,32 +81,39 @@ double calculate(TreeNode *root, int independent)
 return value;
 }
 
-void testPoints(char **out, TreeNode *root, int *rows, int *cols)
+void testPoints(char **out, TreeNode *root, int rows, int cols)
 {
-    int halfRows = ((*rows) - 1) / 2;
-    int halfCols = ((*cols) - 1) / 2;
+    printf("Testing points...");
+    int halfRows = (rows - 1) / 2;
+    int halfCols = (cols - 1) / 2;
     double testValue = 0;
-    int outIndex = 0;
-    
+    int outValue = 0;
+    int j = 0;
+
     // testing v
+    printf("rows: %d, cols: %d \n", rows, cols);
     printf("List of points:\n");
     // testing ^
-    for(int i = (0 - halfRows); i <= halfRows; i++) {
-        testValue = calculate(root, i);
-        outIndex = (int)round(testValue);
-        out[i + halfRows][outIndex + halfCols] = '#';
-        //testing v
-        printf("%d, %d \n", i , outIndex);
-        //testing ^
+    for(int i = (0 - halfCols); i <= halfCols; i = i + 2) {
+        j = i / 2;
+        testValue = calculate(root, j);
+        outValue = (int)round(testValue);
+        if((outValue + halfRows) >= 0 || (outValue + halfRows) < rows) {
+            out[outValue + halfRows][i + halfCols] = '#';
+        }
+        printf("%d, %d \n", j , outValue); //Testing
     }
 }
 
-void buildAxes(char **out, TreeNode* root, int *rows, int *cols)
+void buildAxes(char **out, TreeNode* root, int rows, int cols)
 {
-    for(int j = 0; j < *rows; j++) {
-        for(int i = 0; i < *cols; i++) {
-            int a = ((j + 1) == ((*rows) + 1)/2);
-            int b = ((i + 1) == ((*cols) + 1)/2);
+    printf("Building Axes...\n"); //Testing
+    int a = 0;
+    int b = 0;
+    for(int i = 0; i < rows; i++) {
+        for(int j = 0; j < cols; j++) {
+            a = ((i + 1) == (rows + 1)/2);
+            b = ((j + 1) == (cols + 1)/2);
             if(a && b) {
                 out[i][j] = '+';
             }
@@ -122,7 +127,7 @@ void buildAxes(char **out, TreeNode* root, int *rows, int *cols)
     } 
 }
 
-void build(char **out, TreeNode* root, int *rows, int *cols)
+void build(char **out, TreeNode* root, int rows, int cols)
 {
     buildAxes(out, root, rows, cols);
     testPoints(out, root, rows, cols);
@@ -130,12 +135,14 @@ void build(char **out, TreeNode* root, int *rows, int *cols)
 
 void adjustSize(int *rows, int *cols)
 { 
+    printf("Adjusting size...\n");
     if(!((*rows) % 2)) {
         (*rows)++;
     }
     if(!((*cols) % 2)) {
         (*cols)++;
     }
+    *cols = (2 * (*cols)) - 1;
 }
 
 /*
@@ -245,48 +252,41 @@ int main(void)
     function.buf = NULL; 
     function.length = 0;
 
-    int *rows = malloc(sizeof(int));
-    int *cols = malloc(sizeof(int));
+    int rows;
+    int cols;
 
-    if(rows == NULL || cols == NULL) {
-        fprintf(stderr, "Malloc Error");
-        return -1;
-    }
-
-    getInput(&function, rows, cols);
-    char** splitFunctionStorage = splitFunction(&function);
-
+    getInput(&function, &rows, &cols);
+    adjustSize(&rows, &cols);
+    char** splitFunctionResult = splitFunction(&function);
+    // TODO: be sure to free up entire tree
+    TreeNode* root = buildFunctionTree(splitFunctionStorage, 0);
+    printf("got thru building tree\n");// TODO: delete
+    
     // TODO: delete v (for testing)
     int i = 0;
     while (splitFunctionStorage[i]) {
         printf("\n%s\n", splitFunctionStorage[i++]);
     }
-    printf("Got here w/ no seg fault\n");
-    // TODO: delete ^ (for testing)
+    // TODO: delete ^ 
 
-    // TODO: be sure to free up entire tree
-    TreeNode* root = buildFunctionTree(splitFunctionStorage, 0);
-    
-    printf("got thru building tree\n");// TODO: delete
+    char **out = malloc(rows * sizeof(int*));
 
-    // TODO: uncomment
-    // char **out = malloc(*rows * sizeof(int*));
+    if(out == NULL) {
+        fprintf(stderr, "Malloc Error");
+        return -1;
+    }
 
-    // if(out == NULL) {
-    //     fprintf(stderr, "Malloc Error");
-    //     return -1;
-    // }
+    for(int i = 0; i < rows; i++) {
+        out[i] = malloc(cols * sizeof(char));
+        if(out[i] == NULL) {
+            fprintf(stderr, "Malloc Error");
+            return -1;
+        }
+    }
 
-    // for(int i = 0; i < *rows; i++) {
-    //     out[i] = malloc(*cols * sizeof(char));
-    //     if(out[i] == NULL) {
-    //         fprintf(stderr, "Malloc Error");
-    //         return -1;
-    //     }
-    // }
 
-    // build(out, root, rows, cols);
-    // draw(out, rows, cols);
+    build(out, root, rows, cols);
+    draw(out, rows, cols);
 
     // TODO: free malloc'ed stuff
     return 0;
