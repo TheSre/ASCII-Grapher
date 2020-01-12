@@ -259,8 +259,6 @@ int main(void)
     adjustSize(&rows, &cols);
     char** splitFunctionStorage = splitFunction(&function);
     // TODO: be sure to free up entire tree
-    TreeNode* root = buildFunctionTree(splitFunctionStorage, 0);
-    printf("got thru building tree\n");// TODO: delete
     
     // TODO: delete v (for testing)
     int i = 0;
@@ -268,6 +266,10 @@ int main(void)
         printf("\n%s\n", splitFunctionStorage[i++]);
     }
     // TODO: delete ^ 
+
+    printf("Building tree...\n");// TODO: delete 
+    // TODO: left off here: write up func to print out tree
+    TreeNode* root = buildFunctionTree(splitFunctionStorage, 0);
 
     char **out = malloc(rows * sizeof(int*));
 
