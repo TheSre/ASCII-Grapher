@@ -4,14 +4,16 @@
 #include <ctype.h>
 #include <string.h>
 
-union Data {
+union Data 
+{
     // Numeric values will be stored as doubles
     double number;
     // Variables and operators will be stored as characters
     char opOrVar;
 };
 
-typedef struct TreeNode {
+typedef struct TreeNode 
+{
     union Data data;
     // below is to determine between num/op/var in case of ASCII collisions for 
     // chars (ie 43 instead of +) 
@@ -20,12 +22,30 @@ typedef struct TreeNode {
     struct TreeNode* left; struct TreeNode* right;
 } TreeNode;
 
-typedef struct Function {
+typedef struct Function 
+{
     char* buf;
     size_t length;
 }Function;
 
-void draw(char **out, int rows, int cols)
+// (Pass in the root)
+void printTree(TreeNode* curr)
+{
+    if (!curr) return;
+
+    printTree(curr->left);
+
+    if (curr->type) {
+        printf("%c ", curr->data.opOrVar);
+    }
+    else {
+        printf("%f ", curr->data.number);
+    }
+
+    printTree(curr->right);
+}
+
+void draw(char** out, int rows, int cols)
 {
     for(int i = 0; i < rows; i++) {
         for(int j = 0; j < cols; j++) {
@@ -40,9 +60,9 @@ void draw(char **out, int rows, int cols)
     }
 }
 
-double calculate(TreeNode *root, int independent)
+double calculate(TreeNode* root, int independent)
 {
-    TreeNode *curr = malloc(sizeof(TreeNode));
+    TreeNode* curr = malloc(sizeof(TreeNode));
     double value = 0;
     if(curr->type) {
         switch(curr->data.opOrVar) {
@@ -81,7 +101,7 @@ double calculate(TreeNode *root, int independent)
 return value;
 }
 
-void testPoints(char **out, TreeNode *root, int rows, int cols)
+void testPoints(char** out, TreeNode* root, int rows, int cols)
 {
     printf("Testing points...");
     int halfRows = (rows - 1) / 2;
@@ -105,7 +125,7 @@ void testPoints(char **out, TreeNode *root, int rows, int cols)
     }
 }
 
-void buildAxes(char **out, TreeNode* root, int rows, int cols)
+void buildAxes(char** out, TreeNode* root, int rows, int cols)
 {
     printf("Building Axes...\n"); //Testing
     int a = 0;
@@ -127,13 +147,13 @@ void buildAxes(char **out, TreeNode* root, int rows, int cols)
     } 
 }
 
-void build(char **out, TreeNode* root, int rows, int cols)
+void build(char** out, TreeNode* root, int rows, int cols)
 {
     buildAxes(out, root, rows, cols);
     testPoints(out, root, rows, cols);
 }
 
-void adjustSize(int *rows, int *cols)
+void adjustSize(int* rows, int* cols)
 { 
     printf("Adjusting size...\n");
     if(!((*rows) % 2)) {
@@ -153,9 +173,11 @@ void setVarOrNumber(char* varOrNumber, TreeNode* nodeToSet)
 {
     if (isdigit(varOrNumber[0])) {
         nodeToSet->data.number = atof(varOrNumber);
+        nodeToSet->type = 0;
     }
     else {
         nodeToSet->data.opOrVar = varOrNumber[0];
+        nodeToSet->type = 1;
     }
 }
 
@@ -178,6 +200,7 @@ TreeNode* buildFunctionTree(char** function, int termIndex)
         case '/': 
         case '^': 
             curr->data.opOrVar = function[termIndex][0];
+            curr->type = 1;
 
             // Move on to next term
             ++termIndex;
@@ -219,7 +242,7 @@ char** splitFunction(Function* function)
     return splitFunctionStorage;
 }
 
-void getInput(Function* function, int *rows, int *cols) 
+void getInput(Function* function, int* rows, int* cols) 
 {
     printf("Please enter: \n");
     printf("\ta function to graph: ");
@@ -271,7 +294,11 @@ int main(void)
     // TODO: left off here: write up func to print out tree
     TreeNode* root = buildFunctionTree(splitFunctionStorage, 0);
 
-    char **out = malloc(rows * sizeof(int*));
+    printf("Printing tree...\n");// TODO: delete 
+    printTree(root);
+    printf("\n");
+
+    char** out = malloc(rows * sizeof(int*));
 
     if(out == NULL) {
         fprintf(stderr, "Malloc Error");
