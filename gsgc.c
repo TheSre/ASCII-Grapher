@@ -272,8 +272,8 @@ int main(void)
 
     getInput(&function, &rows, &cols);
     adjustSize(&rows, &cols);
-    char** splitFunctionResult = splitFunction(&function);
-    
+
+    char** splitFunctionStorage = splitFunction(&function);
     // TODO: be sure to free up entire tree
     TreeNode* root = buildFunctionTree(splitFunctionStorage, 0);
     printf("got thru building tree\n");// TODO: delete
