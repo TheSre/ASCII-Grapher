@@ -127,25 +127,24 @@ void buildAxes(char **out, TreeNode* root, int rows, int cols)
     } 
 }
 
-void build(char **out, TreeNode* root, int rows, int cols)
+char **build(TreeNode* root, int rows, int cols)
 {
     char **out = malloc(rows * sizeof(int*));
 
     if(out == NULL) {
         fprintf(stderr, "Malloc Error");
-        return -1;
     }
 
     for(int i = 0; i < rows; i++) {
         out[i] = malloc(cols * sizeof(char));
         if(out[i] == NULL) {
             fprintf(stderr, "Malloc Error");
-            return -1;
         }
     }
 
     buildAxes(out, root, rows, cols);
     testPoints(out, root, rows, cols);
+    return out;
 }
 
 void adjustSize(int *rows, int *cols)
@@ -285,7 +284,7 @@ int main(void)
     }
     // TODO: delete ^ 
 
-    char **out = build(out, root, rows, cols);
+    char **out = build(root, rows, cols);
     draw(out, rows, cols);
 
     // TODO: free malloc'ed stuff
