@@ -156,33 +156,33 @@ void setVarOrNumber(char* varOrNumber, TreeNode* nodeToSet)
  * Recursive helper method for building the function tree. term is used to
  * indicate which term in the function is currently being processed. 
  */
-TreeNode* buildFunctionTreeHelper(char*** term)
+TreeNode* buildFunctionTreeHelper(char** function, int termIndex)
 {
     // Check if past the last term
-    if (!(**term)) {
+    if (!function[termIndex]) {
         return NULL;
     }
     TreeNode* curr = malloc(sizeof(TreeNode));
     // Only need to look at the first character of each term
-    switch (***term) {
+    switch (function[termIndex][0]) {
         case '+': 
         case '-': 
         case '*': 
         case '/': 
         case '^': 
-            curr->data.opOrVar = ***term;
+            curr->data.opOrVar = function[termIndex][0];
 
             // Move on to next term
-            ++(*term);
-            curr->left = buildFunctionTreeHelper(term);
+            ++termIndex;
+            curr->left = buildFunctionTreeHelper(function, termIndex);
 
             // Move on to next term
-            ++(*term);
-            curr->right = buildFunctionTreeHelper(term);
+            ++termIndex;
+            curr->right = buildFunctionTreeHelper(function, termIndex);
             break;
         default:
             // Is a variable or number in this case
-            setVarOrNumber(**term, curr);
+            setVarOrNumber(function[termIndex], curr);
             curr->left = NULL;
             curr->right = NULL;
             break;
@@ -201,7 +201,7 @@ TreeNode* buildFunctionTree(char** splitFunction)
     // }
     // Otherwise, it's a number or variable
     // setVarOrNumber(splitFunction[0], curr);
-    return buildFunctionTreeHelper(&splitFunction);
+    return buildFunctionTreeHelper(splitFunction, 0);
 }
 
 /* Splits the given function and stores it in splitFunctionStorage. 
