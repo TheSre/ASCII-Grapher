@@ -17,8 +17,7 @@ typedef struct TreeNode {
     //for num = 0, for op/var = 1
     //TODO: talk this over and determine if it is needed
     int type;
-    struct TreeNode* left;
-    struct TreeNode* right;
+    struct TreeNode* left; struct TreeNode* right;
 } TreeNode;
 
 typedef struct Function {
@@ -26,10 +25,10 @@ typedef struct Function {
     size_t length;
 }Function;
 
-void draw(char **out, int *rows, int *cols)
+void draw(char **out, int rows, int cols)
 {
-    for(int i = 0; i < *rows; i++) {
-        for(int j = 0; j < *cols; j++) {
+    for(int i = 0; i < rows; i++) {
+        for(int j = 0; j < cols; j++) {
             if(out[i][j] == '#') {
                 printf("\033[0;31m");
             } else {
@@ -79,39 +78,39 @@ double calculate(TreeNode *root, int independent)
 return value;
 }
 
-void testPoints(char **out, TreeNode *root, int *rows, int *cols)
+void testPoints(char **out, TreeNode *root, int rows, int cols)
 {
     printf("Testing points...");
-    int halfRows = ((*rows) - 1) / 2;
-    int halfCols = ((*cols) - 1) / 2;
+    int halfRows = (rows - 1) / 2;
+    int halfCols = (cols - 1) / 2;
     double testValue = 0;
     int outValue = 0;
     int j = 0;
 
     // testing v
-    printf("rows: %d, cols: %d \n", *rows, *cols);
+    printf("rows: %d, cols: %d \n", rows, cols);
     printf("List of points:\n");
     // testing ^
     for(int i = (0 - halfCols); i <= halfCols; i = i + 2) {
         j = i / 2;
         testValue = calculate(root, j);
         outValue = (int)round(testValue);
-        if((outValue + halfRows) >= 0 || (outValue + halfRows) < *rows) {
+        if((outValue + halfRows) >= 0 || (outValue + halfRows) < rows) {
             out[outValue + halfRows][i + halfCols] = '#';
         }
         printf("%d, %d \n", j , outValue); //Testing
     }
 }
 
-void buildAxes(char **out, TreeNode* root, int *rows, int *cols)
+void buildAxes(char **out, TreeNode* root, int rows, int cols)
 {
     printf("Building Axes...\n"); //Testing
     int a = 0;
     int b = 0;
-    for(int i = 0; i < *rows; i++) {
-        for(int j = 0; j < *cols; j++) {
-            a = ((i + 1) == ((*rows) + 1)/2);
-            b = ((j + 1) == ((*cols) + 1)/2);
+    for(int i = 0; i < rows; i++) {
+        for(int j = 0; j < cols; j++) {
+            a = ((i + 1) == (rows + 1)/2);
+            b = ((j + 1) == (cols + 1)/2);
             if(a && b) {
                 out[i][j] = '+';
             }
@@ -125,7 +124,7 @@ void buildAxes(char **out, TreeNode* root, int *rows, int *cols)
     } 
 }
 
-void build(char **out, TreeNode* root, int *rows, int *cols)
+void build(char **out, TreeNode* root, int rows, int cols)
 {
     buildAxes(out, root, rows, cols);
     testPoints(out, root, rows, cols);
@@ -235,16 +234,11 @@ int main(void)
     function.buf = NULL; 
     function.length = 0;
 
-    int *rows = malloc(sizeof(int));
-    int *cols = malloc(sizeof(int));
+    int rows;
+    int cols;
 
-    if(rows == NULL || cols == NULL) {
-        fprintf(stderr, "Malloc Error");
-        return -1;
-    }
-
-    getInput(&function, rows, cols);
-    adjustSize(rows, cols);
+    getInput(&function, &rows, &cols);
+    adjustSize(&rows, &cols);
     char** splitFunctionResult = splitFunction(&function);
     TreeNode* root = buildFunctionTree(&function);
     
@@ -255,15 +249,15 @@ int main(void)
     }
     // TODO: delete ^
 
-    char **out = malloc(*rows * sizeof(int*));
+    char **out = malloc(rows * sizeof(int*));
 
     if(out == NULL) {
         fprintf(stderr, "Malloc Error");
         return -1;
     }
 
-    for(int i = 0; i < *rows; i++) {
-        out[i] = malloc(*cols * sizeof(char));
+    for(int i = 0; i < rows; i++) {
+        out[i] = malloc(cols * sizeof(char));
         if(out[i] == NULL) {
             fprintf(stderr, "Malloc Error");
             return -1;
