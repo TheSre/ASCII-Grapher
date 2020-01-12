@@ -200,8 +200,7 @@ char** splitFunction(Function* function)
     // is added to leave space for terminating w/ NULL.
     int splitFunctionAllocationSize = (function->length - (function->length / 2)) + 1;
     // TODO: free up splitFunction
-    char** splitFunctionStorage = malloc(
-            sizeof((splitFunctionAllocationSize * sizeof(char*))));
+    char** splitFunctionStorage = malloc(splitFunctionAllocationSize * sizeof(char*));
 
     char delim[1] = ",";
     splitFunctionStorage[0] = strtok(function->buf, delim);
