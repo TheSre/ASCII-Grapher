@@ -33,6 +33,8 @@ void printTree(TreeNode* curr)
 {
     if (!curr) return;
 
+    if (curr->left || curr->right) printf("( ");
+
     printTree(curr->left);
 
     if (curr->type) {
@@ -43,6 +45,7 @@ void printTree(TreeNode* curr)
     }
 
     printTree(curr->right);
+    if (curr->left || curr->right) printf(") ");
 }
 
 void draw(char** out, int rows, int cols)
@@ -195,38 +198,34 @@ void setVarOrNumber(char* varOrNumber, TreeNode* nodeToSet)
     }
 }
 
-/*
- * Recursive helper method for building the function tree. term is used to
- * indicate which term in the function is currently being processed. 
- */
-TreeNode* buildFunctionTree(char** function, int termIndex)
+TreeNode* buildFunctionTree(char** function, int* termIndex)
 {
     // Check if past the last term
-    if (!function[termIndex]) {
+    if (!function[*termIndex]) {
         return NULL;
     }
     TreeNode* curr = malloc(sizeof(TreeNode));
     // Only need to look at the first character of each term
-    switch (function[termIndex][0]) {
+    switch (function[*termIndex][0]) {
         case '+': 
         case '-': 
         case '*': 
         case '/': 
         case '^': 
-            curr->data.opOrVar = function[termIndex][0];
+            curr->data.opOrVar = function[*termIndex][0];
             curr->type = 1;
 
             // Move on to next term
-            ++termIndex;
+            ++(*termIndex);
             curr->left = buildFunctionTree(function, termIndex);
 
             // Move on to next term
-            ++termIndex;
+            ++(*termIndex);
             curr->right = buildFunctionTree(function, termIndex);
             break;
         default:
             // Is a variable or number in this case
-            setVarOrNumber(function[termIndex], curr);
+            setVarOrNumber(function[*termIndex], curr);
             curr->left = NULL;
             curr->right = NULL;
             break;
@@ -307,7 +306,8 @@ int main(void)
 
     printf("Building tree...\n");// TODO: delete 
     // TODO: left off here: write up func to print out tree
-    TreeNode* root = buildFunctionTree(splitFunctionStorage, 0);
+    int initialFunctionIndex = 0;
+    TreeNode* root = buildFunctionTree(splitFunctionStorage, &initialFunctionIndex);
 
     printf("Printing tree...\n");// TODO: delete 
     printTree(root);
