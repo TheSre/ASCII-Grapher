@@ -305,7 +305,6 @@ int main(void)
     // TODO: delete ^ 
 
     printf("Building tree...\n");// TODO: delete 
-    // TODO: left off here: write up func to print out tree
     int initialFunctionIndex = 0;
     TreeNode* root = buildFunctionTree(splitFunctionStorage, &initialFunctionIndex);
 
