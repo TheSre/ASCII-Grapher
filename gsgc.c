@@ -63,7 +63,7 @@ void draw(char** out, int rows, int cols)
     }
 }
 
-double calculate(TreeNode* curr, int independent)
+double calculate(TreeNode* curr, double independent)
 {
     double value = 0;
     if(curr->type) {
@@ -110,20 +110,20 @@ void testPoints(char** out, TreeNode* root, int rows, int cols)
     int halfCols = (cols - 1) / 2;
     double testValue = 0;
     int outValue = 0;
-    int j = 0;
+    double j = 0;
 
     // testing v
     printf("rows: %d, cols: %d \n", rows, cols);
     printf("List of points:\n");
     // testing ^
-    for(int i = (0 - halfCols); i <= halfCols; i = i + 2) {
-        j = (i + 1) / 2;
+    for(int i = (0 - halfCols); i <= halfCols; i += 2) {
+        j = i / 2;
         testValue = calculate(root, j);
         outValue = (int)round(testValue);
-        if((outValue + halfRows) >= 0 || (outValue + halfRows) < rows) {
-            out[outValue + halfRows][i + halfCols] = '#';
+        if((halfRows - outValue) >= 0 && (halfRows - outValue) < rows) {
+            out[halfRows - outValue][i + halfCols] = '#';
         }
-        printf("%d, %d \n", j , outValue); //Testing
+        printf("%f, %d \n", j , outValue); //Testing
     }
 }
 
@@ -187,7 +187,7 @@ void adjustSize(int* rows, int* cols)
  */
 void setVarOrNumber(char* varOrNumber, TreeNode* nodeToSet) 
 {
-    if (isdigit(varOrNumber[0])) {
+    if (isdigit(varOrNumber[0]) || varOrNumber[0] == '-') {
         nodeToSet->data.number = atof(varOrNumber);
         nodeToSet->type = 0;
     }
@@ -204,7 +204,16 @@ TreeNode* buildFunctionTree(char** function, int* termIndex)
         return NULL;
     }
     TreeNode* curr = malloc(sizeof(TreeNode));
-    // Only need to look at the first character of each term
+    
+    // Term is a negative or multi-digit value in this case (variables and ops
+    // will just be a single character).
+    if (strlen(function[*termIndex]) > 1) {
+        setVarOrNumber(function[*termIndex], curr);
+        curr->left = NULL;
+        curr->right = NULL;
+        return curr;
+    }
+
     switch (function[*termIndex][0]) {
         case '+': 
         case '-': 
