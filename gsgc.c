@@ -187,7 +187,7 @@ void adjustSize(int* rows, int* cols)
  */
 void setVarOrNumber(char* varOrNumber, TreeNode* nodeToSet) 
 {
-    if (isdigit(varOrNumber[0])) {
+    if (isdigit(varOrNumber[0]) || varOrNumber[0] == '-') {
         nodeToSet->data.number = atof(varOrNumber);
         nodeToSet->type = 0;
     }
@@ -204,7 +204,16 @@ TreeNode* buildFunctionTree(char** function, int* termIndex)
         return NULL;
     }
     TreeNode* curr = malloc(sizeof(TreeNode));
-    // Only need to look at the first character of each term
+    
+    // Term is a negative or multi-digit value in this case (variables and ops
+    // will just be a single character).
+    if (strlen(function[*termIndex]) > 1) {
+        setVarOrNumber(function[*termIndex], curr);
+        curr->left = NULL;
+        curr->right = NULL;
+        return curr;
+    }
+
     switch (function[*termIndex][0]) {
         case '+': 
         case '-': 
