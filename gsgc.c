@@ -63,9 +63,8 @@ void draw(char** out, int rows, int cols)
     }
 }
 
-double calculate(TreeNode* root, int independent)
+double calculate(TreeNode* curr, int independent)
 {
-    TreeNode* curr = malloc(sizeof(TreeNode));
     double value = 0;
     if(curr->type) {
         switch(curr->data.opOrVar) {
@@ -118,7 +117,7 @@ void testPoints(char** out, TreeNode* root, int rows, int cols)
     printf("List of points:\n");
     // testing ^
     for(int i = (0 - halfCols); i <= halfCols; i = i + 2) {
-        j = i / 2;
+        j = (i + 1) / 2;
         testValue = calculate(root, j);
         outValue = (int)round(testValue);
         if((outValue + halfRows) >= 0 || (outValue + halfRows) < rows) {
