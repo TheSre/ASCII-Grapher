@@ -28,24 +28,27 @@ typedef struct Function
     size_t length;
 }Function;
 
+TreeNode* origin;
+
 // (Pass in the root)
 void printTree(TreeNode* curr)
 {
     if (!curr) return;
 
-    if (curr->left || curr->right) printf("( ");
+    if ((curr->left || curr->right) && curr != origin) printf("(");
 
     printTree(curr->left);
 
     if (curr->type) {
-        printf("%c ", curr->data.opOrVar);
+        if (curr->data.opOrVar != '*')
+            printf(isalpha(curr->data.opOrVar) ? "%c" : " %c ", curr->data.opOrVar);
     }
     else {
-        printf("%f ", curr->data.number);
+        printf("%d", (int)curr->data.number);
     }
 
     printTree(curr->right);
-    if (curr->left || curr->right) printf(") ");
+    if ((curr->left || curr->right) && curr != origin) printf(")");
 }
 
 void draw(char** out, int rows, int cols)
@@ -105,7 +108,7 @@ return value;
 
 void testPoints(char** out, TreeNode* root, int rows, int cols)
 {
-    printf("Testing points...");
+    // printf("Testing points...");
     int halfRows = (rows - 1) / 2;
     int halfCols = (cols - 1) / 2;
     double testValue = 0;
@@ -113,8 +116,8 @@ void testPoints(char** out, TreeNode* root, int rows, int cols)
     double j = 0;
 
     // testing v
-    printf("rows: %d, cols: %d \n", rows, cols);
-    printf("List of points:\n");
+    // printf("rows: %d, cols: %d \n", rows, cols);
+    // printf("List of points:\n");
     // testing ^
     for(int i = (0 - halfCols); i <= halfCols; i += 2) {
         j = i / 2;
@@ -123,13 +126,13 @@ void testPoints(char** out, TreeNode* root, int rows, int cols)
         if((halfRows - outValue) >= 0 && (halfRows - outValue) < rows) {
             out[halfRows - outValue][i + halfCols] = '#';
         }
-        printf("%f, %d \n", j , outValue); //Testing
+        // printf("%f, %d \n", j , outValue); //Testing
     }
 }
 
 void buildAxes(char** out, TreeNode* root, int rows, int cols)
 {
-    printf("Building Axes...\n"); //Testing
+    // printf("Building Axes...\n"); //Testing
     int a = 0;
     int b = 0;
     for(int i = 0; i < rows; i++) {
@@ -144,6 +147,9 @@ void buildAxes(char** out, TreeNode* root, int rows, int cols)
             }
             else if(b) {
                 out[i][j] = '|';
+            }
+            else {
+                out[i][j] = ' ';
             }
         }
     } 
@@ -171,7 +177,7 @@ char** build(TreeNode* root, int rows, int cols)
 
 void adjustSize(int* rows, int* cols)
 { 
-    printf("Adjusting size...\n");
+    // printf("Adjusting size...\n");
     if(!((*rows) % 2)) {
         (*rows)++;
     }
@@ -306,18 +312,22 @@ int main(void)
     // TODO: be sure to free up entire tree
     
     // TODO: delete v (for testing)
-    int i = 0;
-    while (splitFunctionStorage[i]) {
-        printf("\n%s\n", splitFunctionStorage[i++]);
-    }
-    // TODO: delete ^ 
+    // int i = 0;
+    // while (splitFunctionStorage[i]) {
+    //     printf("\n%s\n", splitFunctionStorage[i++]);
+    // }
+    // // TODO: delete ^ 
 
-    printf("Building tree...\n");// TODO: delete 
+    //printf("Building tree...\n");// TODO: delete 
     int initialFunctionIndex = 0;
     TreeNode* root = buildFunctionTree(splitFunctionStorage, &initialFunctionIndex);
 
-    printf("Printing tree...\n");// TODO: delete 
+    //printf("Printing tree...\n");// TODO: delete 
+    printf("\n");
+    printf("\n");
+    origin = root;
     printTree(root);
+    printf("\n");
     printf("\n");
 
     char **out = build(root, rows, cols);
