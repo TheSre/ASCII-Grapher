@@ -3,6 +3,7 @@
 #include <math.h>
 #include <ctype.h>
 #include <string.h>
+#include <sys/ioctl.h>
 
 union Data 
 {
@@ -12,13 +13,20 @@ union Data
     char opOrVar;
 };
 
+enum TreeNodeType
+{
+    TREENODE_NUMBER = 0,
+    TREENODE_OP = 1,
+    TREENODE_VAR = 2
+};
+
 typedef struct TreeNode 
 {
     union Data data;
     // below is to determine between num/op/var in case of ASCII collisions for 
     // chars (ie 43 instead of +) 
     // for num = 0, for op/var = 1
-    int type;
+    enum TreeNodeType type;
     struct TreeNode* left; struct TreeNode* right;
 } TreeNode;
 
@@ -26,9 +34,19 @@ typedef struct Function
 {
     char* buf;
     size_t length;
-}Function;
+} Function;
+
+typedef struct Range
+{
+    double low;
+    double high;
+} Range;
 
 TreeNode* origin;
+struct winsize window;
+struct Range xRange = { -10, 10 };
+struct Range yRange = { -10, 10 };
+int fixedRatio = 1;
 
 // (Pass in the root)
 void printTree(TreeNode* curr)
@@ -39,22 +57,32 @@ void printTree(TreeNode* curr)
 
     printTree(curr->left);
 
-    if (curr->type) {
-        if (curr->data.opOrVar != '*')
-            printf(isalpha(curr->data.opOrVar) ? "%c" : " %c ", curr->data.opOrVar);
-    }
-    else {
-        printf("%d", (int)curr->data.number);
+    switch(curr->type) {
+        case TREENODE_NUMBER:
+            printf("%d", (int)curr->data.number);
+            break;
+        case TREENODE_OP:
+            if (curr->data.opOrVar == '^')
+                printf("%c", curr->data.opOrVar);
+            else if (curr->data.opOrVar != '*' || curr->right->type == TREENODE_NUMBER)
+                printf(" %c ", curr->data.opOrVar);
+            break;
+        case TREENODE_VAR:
+            printf("%c", curr->data.opOrVar);
+            break;
+        default: 
+            fprintf(stderr, "Invalid TreeNode Type");
+            exit(EXIT_FAILURE);
     }
 
     printTree(curr->right);
     if ((curr->left || curr->right) && curr != origin) printf(")");
 }
 
-void draw(char** out, int rows, int cols)
+void draw(char** out)
 {
-    for(int i = 0; i < rows; i++) {
-        for(int j = 0; j < cols; j++) {
+    for(int i = 0; i < window.ws_row; i++) {
+        for(int j = 0; j < window.ws_col; j++) {
             if(out[i][j] == '#') {
                 printf("\033[0;31m");
             } else {
@@ -106,46 +134,65 @@ double calculate(TreeNode* curr, double independent)
 return value;
 }
 
-void testPoints(char** out, TreeNode* root, int rows, int cols)
+int getRowNumber(double value)
+{
+    double scalingFactor, output;
+
+    scalingFactor = (value - yRange.low) / (yRange.high - yRange.low);
+    output = ((double)window.ws_row - 1) - scalingFactor * ((double)window.ws_row - 1);
+
+    return (int)round(output);
+}
+
+double getTestValue(int col)
+{
+    double scalingFactor, output;
+
+    scalingFactor = (double)col / ((double)window.ws_col - 1);
+    output = xRange.low + scalingFactor * (xRange.high - xRange.low);
+
+    return output;
+}
+
+void populateOutputWindow(char** out)
 {
     // printf("Testing points...");
-    int halfRows = (rows - 1) / 2;
-    int halfCols = (cols - 1) / 2;
-    double testValue = 0;
-    int outValue = 0;
-    double j = 0;
+    double testX, testY;
+    int row, col;
 
     // testing v
     // printf("rows: %d, cols: %d \n", rows, cols);
     // printf("List of points:\n");
     // testing ^
-    for(int i = (0 - halfCols); i <= halfCols; i += 2) {
-        j = i / 2;
-        testValue = calculate(root, j);
-        outValue = (int)round(testValue);
-        if((halfRows - outValue) >= 0 && (halfRows - outValue) < rows) {
-            out[halfRows - outValue][i + halfCols] = '#';
+    for(col = 0; col < window.ws_col; col++) {
+        testX = getTestValue(col);
+        testY = calculate(origin, testX);
+        row = getRowNumber(testY);
+
+        if(row >= 0 && row < window.ws_row) {
+            out[row][col] = '#';
         }
         // printf("%f, %d \n", j , outValue); //Testing
     }
 }
 
-void buildAxes(char** out, TreeNode* root, int rows, int cols)
+void initOutputWindow(char** out)
 {
     // printf("Building Axes...\n"); //Testing
-    int a = 0;
-    int b = 0;
-    for(int i = 0; i < rows; i++) {
-        for(int j = 0; j < cols; j++) {
-            a = ((i + 1) == (rows + 1)/2);
-            b = ((j + 1) == (cols + 1)/2);
-            if(a && b) {
+    int isMiddleRow = 0;
+    int isMiddleCol = 0;
+    for(int i = 0; i < window.ws_row; i++) {
+        for(int j = 0; j < window.ws_col; j++) {
+            isMiddleRow = (i == window.ws_row / 2);
+            isMiddleCol = (j == window.ws_col / 2);
+
+            if(isMiddleRow && isMiddleCol) {
                 out[i][j] = '+';
             }
-            else if(a) {
+            else if(isMiddleRow) {
                 out[i][j] = '-';
             }
-            else if(b) {
+            else if(isMiddleCol) {
                 out[i][j] = '|';
             }
             else {
@@ -155,36 +202,52 @@ void buildAxes(char** out, TreeNode* root, int rows, int cols)
     } 
 }
 
-char** build(TreeNode* root, int rows, int cols)
+char** createOutputWindow()
 {
-    char **out = malloc(rows * sizeof(int*));
+    char** out = malloc(window.ws_row * sizeof(char*));
 
-    if(out == NULL) {
+    if (NULL == out) {
         fprintf(stderr, "Malloc Error");
+        exit(EXIT_FAILURE);
     }
 
-    for(int i = 0; i < rows; i++) {
-        out[i] = malloc(cols * sizeof(char));
-        if(out[i] == NULL) {
+    for (int i = 0; i < window.ws_row; i++) {
+        out[i] = malloc(window.ws_col * sizeof(char));
+
+        if (NULL == out[i]) {
             fprintf(stderr, "Malloc Error");
+            exit(EXIT_FAILURE);
         }
     }
-
-    buildAxes(out, root, rows, cols);
-    testPoints(out, root, rows, cols);
     return out;
 }
 
-void adjustSize(int* rows, int* cols)
-{ 
-    // printf("Adjusting size...\n");
-    if(!((*rows) % 2)) {
-        (*rows)++;
+void updateWindowSize()
+{
+    ioctl(1, TIOCGWINSZ, &window);
+    window.ws_row = 2 * (window.ws_row / 2) - 1;
+    window.ws_col = 2 * (window.ws_col / 2) - 1;
+
+    if (window.ws_row < 5 || window.ws_col < 5) {
+        fprintf(stdout, "Window size too small"); // This could be replaced with a pause until window is larger
+        exit(EXIT_FAILURE);
     }
-    if(!((*cols) % 2)) {
-        (*cols)++;
-    }
-    *cols = (2 * (*cols)) - 1;
+
+    if (fixedRatio)
+        window.ws_col = window.ws_row = (short)fmin((double)window.ws_row, (double)window.ws_col);
+
+    // printf("Window Size (RxC) = %dx%d...\n", (int)window.ws_row, (int)window.ws_col); // TODO: delete
+}
+
+char** buildOutput()
+{
+    char** out = NULL;
+
+    updateWindowSize();
+    out = createOutputWindow();
+    initOutputWindow(out);
+    populateOutputWindow(out);
+    return out;
 }
 
 /*
@@ -195,11 +258,11 @@ void setVarOrNumber(char* varOrNumber, TreeNode* nodeToSet)
 {
     if (isdigit(varOrNumber[0]) || varOrNumber[0] == '-') {
         nodeToSet->data.number = atof(varOrNumber);
-        nodeToSet->type = 0;
+        nodeToSet->type = TREENODE_NUMBER;
     }
     else {
         nodeToSet->data.opOrVar = varOrNumber[0];
-        nodeToSet->type = 1;
+        nodeToSet->type = TREENODE_VAR;
     }
 }
 
@@ -227,7 +290,7 @@ TreeNode* buildFunctionTree(char** function, int* termIndex)
         case '/': 
         case '^': 
             curr->data.opOrVar = function[*termIndex][0];
-            curr->type = 1;
+            curr->type = TREENODE_OP;
 
             // Move on to next term
             ++(*termIndex);
@@ -269,15 +332,15 @@ char** splitFunction(Function* function)
     return splitFunctionStorage;
 }
 
-void getInput(Function* function, int* rows, int* cols) 
+void getInput(Function* function) 
 {
     printf("Please enter: \n");
     printf("\ta function to graph: ");
     function->length = getline(&(function->buf), &(function->length), stdin);
-    printf("\twindow size (vertical): ");
-    scanf("%d", rows);
-    printf("\twindow size (horizontal): ");
-    scanf("%d", cols);
+    // printf("\twindow size (vertical): ");
+    // scanf("%d", rows);
+    // printf("\twindow size (horizontal): ");
+    // scanf("%d", cols);
 
     if (function->length == -1) {
         printf("Error reading in function");
@@ -302,11 +365,11 @@ int main(void)
     function.buf = NULL; 
     function.length = 0;
 
-    int rows;
-    int cols;
+    // int rows;
+    // int cols;
 
-    getInput(&function, &rows, &cols);
-    adjustSize(&rows, &cols);
+    getInput(&function);
+    // adjustSize(&rows, &cols);
 
     char** splitFunctionStorage = splitFunction(&function);
     // TODO: be sure to free up entire tree
@@ -318,21 +381,27 @@ int main(void)
     // }
     // // TODO: delete ^ 
 
-    //printf("Building tree...\n");// TODO: delete 
+    // printf("Building tree...\n");// TODO: delete 
     int initialFunctionIndex = 0;
-    TreeNode* root = buildFunctionTree(splitFunctionStorage, &initialFunctionIndex);
+    origin = buildFunctionTree(splitFunctionStorage, &initialFunctionIndex);
 
-    //printf("Printing tree...\n");// TODO: delete 
+    // printf("Printing tree...\n");// TODO: delete 
     printf("\n");
     printf("\n");
-    origin = root;
-    printTree(root);
+    printTree(origin);
     printf("\n");
     printf("\n");
 
-    char **out = build(root, rows, cols);
-    draw(out, rows, cols);
+    // printf("Building graph...\n");// TODO: delete
+    char **out = buildOutput();
+    draw(out);
 
     // TODO: free malloc'ed stuff
+
+    for (int i = 0; i < window.ws_row; i++) {
+        free(out[i]);
+    }
+    free(out);
+
     return 0;
 }
