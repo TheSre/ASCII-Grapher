@@ -16,23 +16,21 @@ union Data
 enum TreeNodeType
 {
     TREENODE_NUMBER = 0,
-    TREENODE_OP = 1,
-    TREENODE_VAR = 2
+    TREENODE_OP     = 1,
+    TREENODE_VAR    = 2
 };
 
 typedef struct TreeNode 
 {
-    union Data data;
-    // below is to determine between num/op/var in case of ASCII collisions for 
-    // chars (ie 43 instead of +) 
-    // for num = 0, for op/var = 1
+    union Data        data;
     enum TreeNodeType type;
-    struct TreeNode* left; struct TreeNode* right;
+    struct TreeNode*  left;
+    struct TreeNode* right;
 } TreeNode;
 
 typedef struct Function 
 {
-    char* buf;
+    char*  buf;
     size_t length;
 } Function;
 
