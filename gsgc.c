@@ -92,16 +92,34 @@ void draw(char** out)
     }
 }
 
-int getYCoordinate(char** out, int x)
+int isValidRow(int row)
 {
-    int y;
+    return (row >= 0 && row < window.ws_row);
+}
 
-    for (y = 0; y < window.ws_col; y++) {
-        if (out[y][x] == '#')
-            return y;
-    }
+int isValidCol(int col)
+{
+    return (col >= 0 && col < window.ws_col);
+}
 
-    return -1;
+int getRowNumber(double value)
+{
+    double scalingFactor, output;
+
+    scalingFactor = (value - yRange.low) / (yRange.high - yRange.low);
+    output = ((double)window.ws_row - 1) - scalingFactor * ((double)window.ws_row - 1);
+
+    return (int)round(output);
+}
+
+double getTestValue(int col)
+{
+    double scalingFactor, output;
+
+    scalingFactor = (double)col / ((double)window.ws_col - 1);
+    output = xRange.low + scalingFactor * (xRange.high - xRange.low);
+
+    return output;
 }
 
 double calculate(TreeNode* curr, double independent)
@@ -144,24 +162,25 @@ double calculate(TreeNode* curr, double independent)
     return value;
 }
 
-int getRowNumber(double value)
+int getFunctionRow(int col)
 {
-    double scalingFactor, output;
+    int row;
+    double testValue, testResult;
 
-    scalingFactor = (value - yRange.low) / (yRange.high - yRange.low);
-    output = ((double)window.ws_row - 1) - scalingFactor * ((double)window.ws_row - 1);
+    // if (!isValidCol(col))
+    //     return -1;
 
-    return (int)round(output);
-}
+    // // Check if row is within output window
+    // for (row = 0; row < window.ws_row; row++) {
+    //     if (out[row][col] == '#')
+    //         return row;
+    // }
 
-double getTestValue(int col)
-{
-    double scalingFactor, output;
+    testValue = getTestValue(col);
+    testResult = calculate(origin, testValue);
+    row = getRowNumber(testResult);
 
-    scalingFactor = (double)col / ((double)window.ws_col - 1);
-    output = xRange.low + scalingFactor * (xRange.high - xRange.low);
-
-    return output;
+    return row;
 }
 
 void interpolateValues(char** out, int leftCol, int rightCol, int leftRow, int rightRow)
@@ -193,6 +212,9 @@ void interpolateValues(char** out, int leftCol, int rightCol, int leftRow, int r
     }
 
     for (row = lowRow + 1; row < highRow; row++) {
+        if (!isValidRow(row))
+            continue;
+
         if (row < middleRow)
             out[row][lowCol] = '#';
         else
@@ -206,13 +228,15 @@ void interpolateOutputWindow(char** out)
     int leftIndex;
     int rightIndex;
 
-    rightIndex = getYCoordinate(out, 0);
+    rightIndex = getFunctionRow(0);
 
-    for (col = 0; col < window.ws_col - 1; col++) {
+    for (col = -1; col < window.ws_col; col++) {
         leftIndex = rightIndex;
-        rightIndex = getYCoordinate(out, col + 1);
-        if (leftIndex < 0 || rightIndex < 0)
+        rightIndex = getFunctionRow(col + 1);
+
+        if (!isValidRow(leftIndex) && !isValidRow(rightIndex))
             continue;
+
         interpolateValues(out, col, col + 1, leftIndex, rightIndex);
     }
 }
@@ -220,7 +244,6 @@ void interpolateOutputWindow(char** out)
 void populateOutputWindow(char** out)
 {
     // printf("Testing points...");
-    double testX, testY;
     int row, col;
 
     // testing v
@@ -228,9 +251,7 @@ void populateOutputWindow(char** out)
     // printf("List of points:\n");
     // testing ^
     for(col = 0; col < window.ws_col; col++) {
-        testX = getTestValue(col);
-        testY = calculate(origin, testX);
-        row = getRowNumber(testY);
+        row = getFunctionRow(col);
 
         if(row >= 0 && row < window.ws_row) {
             out[row][col] = '#';
