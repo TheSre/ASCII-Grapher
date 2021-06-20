@@ -25,7 +25,7 @@ typedef struct TreeNode
     union Data        data;
     enum TreeNodeType type;
     struct TreeNode*  left;
-    struct TreeNode* right;
+    struct TreeNode*  right;
 } TreeNode;
 
 typedef struct Function 
@@ -92,44 +92,56 @@ void draw(char** out)
     }
 }
 
+int getYCoordinate(char** out, int x)
+{
+    int y;
+
+    for (y = 0; y < window.ws_col; y++) {
+        if (out[y][x] == '#')
+            return y;
+    }
+
+    return -1;
+}
+
 double calculate(TreeNode* curr, double independent)
 {
     double value = 0;
-    if(curr->type) {
-        switch(curr->data.opOrVar) {
-            case '+':
-                value = calculate(curr->left, independent) 
-                        + calculate(curr->right, independent);
-                break;
+    if (curr->type) {
+        switch (curr->data.opOrVar) {
+        case '+':
+            value = calculate(curr->left, independent)
+                + calculate(curr->right, independent);
+            break;
             // below assumes left-right storage for subtraction
-            case '-':
-                value = calculate(curr->left, independent) 
-                        - calculate(curr->right, independent);
-                break;
-            case '*':
-                value = calculate(curr->left, independent) 
-                        * calculate(curr->right, independent);
-                break;
+        case '-':
+            value = calculate(curr->left, independent)
+                - calculate(curr->right, independent);
+            break;
+        case '*':
+            value = calculate(curr->left, independent)
+                * calculate(curr->right, independent);
+            break;
             // below assumes left/right storage for division
-            case '/':
-                value = calculate(curr->left, independent) 
-                        / calculate(curr->right, independent);
-                break;
+        case '/':
+            value = calculate(curr->left, independent)
+                / calculate(curr->right, independent);
+            break;
             // below assumes left^right storage for exponentials
-            case '^':
-                value = pow(calculate(curr->left, independent), 
-                        calculate(curr->right, independent));
-                break;
+        case '^':
+            value = pow(calculate(curr->left, independent),
+                calculate(curr->right, independent));
+            break;
             // variable case, currently all non-op non-num values will be treated 
             // as indep. var
-            default:
-                value = independent;
+        default:
+            value = independent;
         }
     }
     else {
         value = curr->data.number;
     }
-return value;
+    return value;
 }
 
 int getRowNumber(double value)
@@ -150,6 +162,59 @@ double getTestValue(int col)
     output = xRange.low + scalingFactor * (xRange.high - xRange.low);
 
     return output;
+}
+
+void interpolateValues(char** out, int leftCol, int rightCol, int leftRow, int rightRow)
+{
+    double middleX, middleY;
+    int middleRow, lowRow, highRow, lowCol, highCol;
+    int row;
+
+    middleX = (getTestValue(leftCol) + getTestValue(rightCol)) / 2;
+    middleY = calculate(origin, middleX);
+    middleRow = getRowNumber(middleY);
+
+    if (middleRow == leftRow || middleRow == rightRow)
+        return;
+
+    if (leftRow < rightRow) {
+        lowRow = leftRow;
+        lowCol = leftCol;
+
+        highRow = rightRow;
+        highCol = rightCol;
+    }
+    else {
+        lowRow = rightRow;
+        lowCol = rightCol;
+
+        highRow = leftRow;
+        highCol = leftCol;
+    }
+
+    for (row = lowRow + 1; row < highRow; row++) {
+        if (row < middleRow)
+            out[row][lowCol] = '#';
+        else
+            out[row][highCol] = '#';
+    }
+}
+
+void interpolateOutputWindow(char** out)
+{
+    int col;
+    int leftIndex;
+    int rightIndex;
+
+    rightIndex = getYCoordinate(out, 0);
+
+    for (col = 0; col < window.ws_col - 1; col++) {
+        leftIndex = rightIndex;
+        rightIndex = getYCoordinate(out, col + 1);
+        if (leftIndex < 0 || rightIndex < 0)
+            continue;
+        interpolateValues(out, col, col + 1, leftIndex, rightIndex);
+    }
 }
 
 void populateOutputWindow(char** out)
@@ -245,6 +310,7 @@ char** buildOutput()
     out = createOutputWindow();
     initOutputWindow(out);
     populateOutputWindow(out);
+    interpolateOutputWindow(out);
     return out;
 }
 
