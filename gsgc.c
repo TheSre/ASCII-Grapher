@@ -5,7 +5,7 @@
 #include <string.h>
 #include <sys/ioctl.h>
 
-union Data 
+union Data
 {
     // Numeric values will be stored as doubles
     double number;
@@ -16,21 +16,21 @@ union Data
 enum TreeNodeType
 {
     TREENODE_NUMBER = 0,
-    TREENODE_OP     = 1,
-    TREENODE_VAR    = 2
+    TREENODE_OP = 1,
+    TREENODE_VAR = 2
 };
 
-typedef struct TreeNode 
+typedef struct TreeNode
 {
     union Data        data;
     enum TreeNodeType type;
-    struct TreeNode*  left;
-    struct TreeNode*  right;
+    struct TreeNode* left;
+    struct TreeNode* right;
 } TreeNode;
 
-typedef struct Function 
+typedef struct Function
 {
-    char*  buf;
+    char* buf;
     size_t length;
 } Function;
 
@@ -55,22 +55,22 @@ void printTree(TreeNode* curr)
 
     printTree(curr->left);
 
-    switch(curr->type) {
-        case TREENODE_NUMBER:
-            printf("%d", (int)curr->data.number);
-            break;
-        case TREENODE_OP:
-            if (curr->data.opOrVar == '^')
-                printf("%c", curr->data.opOrVar);
-            else if (curr->data.opOrVar != '*' || curr->right->type == TREENODE_NUMBER)
-                printf(" %c ", curr->data.opOrVar);
-            break;
-        case TREENODE_VAR:
+    switch (curr->type) {
+    case TREENODE_NUMBER:
+        printf("%d", (int)curr->data.number);
+        break;
+    case TREENODE_OP:
+        if (curr->data.opOrVar == '^')
             printf("%c", curr->data.opOrVar);
-            break;
-        default: 
-            fprintf(stderr, "Invalid TreeNode Type");
-            exit(EXIT_FAILURE);
+        else if (curr->data.opOrVar != '*' || curr->right->type == TREENODE_NUMBER)
+            printf(" %c ", curr->data.opOrVar);
+        break;
+    case TREENODE_VAR:
+        printf("%c", curr->data.opOrVar);
+        break;
+    default:
+        fprintf(stderr, "Invalid TreeNode Type");
+        exit(EXIT_FAILURE);
     }
 
     printTree(curr->right);
@@ -79,14 +79,15 @@ void printTree(TreeNode* curr)
 
 void draw(char** out)
 {
-    for(int i = 0; i < window.ws_row; i++) {
-        for(int j = 0; j < window.ws_col; j++) {
-            if(out[i][j] == '#') {
+    for (int i = 0; i < window.ws_row; i++) {
+        for (int j = 0; j < window.ws_col; j++) {
+            if (out[i][j] == '#') {
                 printf("\033[0;31m");
-            } else {
+            }
+            else {
                 printf("\033[0m");
             }
-            printf("%c",out[i][j]);
+            printf("%c", out[i][j]);
         }
         printf("\n");
     }
@@ -250,10 +251,10 @@ void populateOutputWindow(char** out)
     // printf("rows: %d, cols: %d \n", rows, cols);
     // printf("List of points:\n");
     // testing ^
-    for(col = 0; col < window.ws_col; col++) {
+    for (col = 0; col < window.ws_col; col++) {
         row = getFunctionRow(col);
 
-        if(row >= 0 && row < window.ws_row) {
+        if (row >= 0 && row < window.ws_row) {
             out[row][col] = '#';
         }
         // printf("%f, %d \n", j , outValue); //Testing
@@ -265,25 +266,25 @@ void initOutputWindow(char** out)
     // printf("Building Axes...\n"); //Testing
     int isMiddleRow = 0;
     int isMiddleCol = 0;
-    for(int i = 0; i < window.ws_row; i++) {
-        for(int j = 0; j < window.ws_col; j++) {
+    for (int i = 0; i < window.ws_row; i++) {
+        for (int j = 0; j < window.ws_col; j++) {
             isMiddleRow = (i == window.ws_row / 2);
             isMiddleCol = (j == window.ws_col / 2);
 
-            if(isMiddleRow && isMiddleCol) {
+            if (isMiddleRow && isMiddleCol) {
                 out[i][j] = '+';
             }
-            else if(isMiddleRow) {
+            else if (isMiddleRow) {
                 out[i][j] = '-';
             }
-            else if(isMiddleCol) {
+            else if (isMiddleCol) {
                 out[i][j] = '|';
             }
             else {
                 out[i][j] = ' ';
             }
         }
-    } 
+    }
 }
 
 char** createOutputWindow()
@@ -339,7 +340,7 @@ char** buildOutput()
  * Sets nodeToSet's data field to a variable or number depending on what
  * varOrNumber contains.
  */
-void setVarOrNumber(char* varOrNumber, TreeNode* nodeToSet) 
+void setVarOrNumber(char* varOrNumber, TreeNode* nodeToSet)
 {
     if (isdigit(varOrNumber[0]) || varOrNumber[0] == '-') {
         nodeToSet->data.number = atof(varOrNumber);
@@ -358,7 +359,7 @@ TreeNode* buildFunctionTree(char** function, int* termIndex)
         return NULL;
     }
     TreeNode* curr = malloc(sizeof(TreeNode));
-    
+
     // Term is a negative or multi-digit value in this case (variables and ops
     // will just be a single character).
     if (strlen(function[*termIndex]) > 1) {
@@ -369,36 +370,36 @@ TreeNode* buildFunctionTree(char** function, int* termIndex)
     }
 
     switch (function[*termIndex][0]) {
-        case '+': 
-        case '-': 
-        case '*': 
-        case '/': 
-        case '^': 
-            curr->data.opOrVar = function[*termIndex][0];
-            curr->type = TREENODE_OP;
+    case '+':
+    case '-':
+    case '*':
+    case '/':
+    case '^':
+        curr->data.opOrVar = function[*termIndex][0];
+        curr->type = TREENODE_OP;
 
-            // Move on to next term
-            ++(*termIndex);
-            curr->left = buildFunctionTree(function, termIndex);
+        // Move on to next term
+        ++(*termIndex);
+        curr->left = buildFunctionTree(function, termIndex);
 
-            // Move on to next term
-            ++(*termIndex);
-            curr->right = buildFunctionTree(function, termIndex);
-            break;
-        default:
-            // Is a variable or number in this case
-            setVarOrNumber(function[*termIndex], curr);
-            curr->left = NULL;
-            curr->right = NULL;
-            break;
+        // Move on to next term
+        ++(*termIndex);
+        curr->right = buildFunctionTree(function, termIndex);
+        break;
+    default:
+        // Is a variable or number in this case
+        setVarOrNumber(function[*termIndex], curr);
+        curr->left = NULL;
+        curr->right = NULL;
+        break;
     }
     return curr;
 }
 
-/* Splits the given function and stores it in splitFunctionStorage. 
+/* Splits the given function and stores it in splitFunctionStorage.
  * Returns the number of terms in the newly-split function.
  */
-char** splitFunction(Function* function) 
+char** splitFunction(Function* function)
 {
     // This is the highest number of terms the function could have based on its
     // length (this would be the case where each term is a single character). 1
@@ -417,7 +418,7 @@ char** splitFunction(Function* function)
     return splitFunctionStorage;
 }
 
-void getInput(Function* function) 
+void getInput(Function* function)
 {
     printf("Please enter: \n");
     printf("\ta function to graph: ");
@@ -442,12 +443,12 @@ void printWelcomeMessage()
     }
 }
 
-int main(void) 
+int main(void)
 {
     printWelcomeMessage();
 
-    Function function; 
-    function.buf = NULL; 
+    Function function;
+    function.buf = NULL;
     function.length = 0;
 
     // int rows;
@@ -458,7 +459,7 @@ int main(void)
 
     char** splitFunctionStorage = splitFunction(&function);
     // TODO: be sure to free up entire tree
-    
+
     // TODO: delete v (for testing)
     // int i = 0;
     // while (splitFunctionStorage[i]) {
@@ -478,7 +479,7 @@ int main(void)
     printf("\n");
 
     // printf("Building graph...\n");// TODO: delete
-    char **out = buildOutput();
+    char** out = buildOutput();
     draw(out);
 
     // TODO: free malloc'ed stuff
