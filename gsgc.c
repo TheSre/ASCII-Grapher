@@ -11,6 +11,7 @@
 #endif
 
 #define MAX_INPUT_SIZE 1024
+#define FUNCTION_CHAR '@'
 
 union Data
 {
@@ -138,7 +139,7 @@ void draw(char** out)
 {
     for (int i = 0; i < window.rows; i++) {
         for (int j = 0; j < window.cols; j++) {
-            if (out[i][j] == '#') {
+            if (out[i][j] == FUNCTION_CHAR) {
                 printf("\033[0;31m");
             }
             else {
@@ -161,7 +162,7 @@ void draw(char** out)
 
     for (int i = 0; i < window.rows; i++) {
         for (int j = 0; j < window.cols; j++) {
-            if (out[i][j] == '#') {
+            if (out[i][j] == FUNCTION_CHAR) {
                 SetConsoleTextAttribute(console, FOREGROUND_RED);
                 printf("%c", out[i][j]);
                 SetConsoleTextAttribute(console, attr);
@@ -256,7 +257,7 @@ int getFunctionRow(int col)
 
     // // Check if row is within output window
     // for (row = 0; row < window.rows; row++) {
-    //     if (out[row][col] == '#')
+    //     if (out[row][col] == FUNCTION_CHAR)
     //         return row;
     // }
 
@@ -300,9 +301,9 @@ void interpolateValues(char** out, int leftCol, int rightCol, int leftRow, int r
             continue;
 
         if (row < middleRow)
-            out[row][lowCol] = '#';
+            out[row][lowCol] = FUNCTION_CHAR;
         else
-            out[row][highCol] = '#';
+            out[row][highCol] = FUNCTION_CHAR;
     }
 }
 
@@ -338,7 +339,7 @@ void populateOutputWindow(char** out)
         row = getFunctionRow(col);
 
         if (row >= 0 && row < window.rows) {
-            out[row][col] = '#';
+            out[row][col] = FUNCTION_CHAR;
         }
         // printf("%f, %d \n", j , outValue); //Testing
     }
