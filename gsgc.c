@@ -170,7 +170,7 @@ void draw(char** out)
                 printf("%c", out[i][j]);
             }
         }
-        if (fixedRatio && i != window.rows - 1) printf("\n");
+        printf("\n");
     }
 }
 #endif
@@ -419,8 +419,8 @@ void updateWindowSize()
     unsigned short cols, rows;
 
     GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
-    cols = (unsigned short)(csbi.srWindow.Right - csbi.srWindow.Left + 1);
-    rows = (unsigned short)(csbi.srWindow.Bottom - csbi.srWindow.Top + 1);
+    cols = (unsigned short)(csbi.srWindow.Right - csbi.srWindow.Left);
+    rows = (unsigned short)(csbi.srWindow.Bottom - csbi.srWindow.Top - 1);
 
     window.rows = rows;
     window.cols = cols;
