@@ -18,7 +18,7 @@ union Data
     // Numeric values will be stored as doubles
     double number;
     // Variables and operators will be stored as characters
-    char opOrVar;
+    char symbol;
 };
 
 typedef enum TreeNodeType
@@ -186,13 +186,13 @@ void printTree(TreeNode* curr)
             printf("%d", (int)curr->data.number);
             break;
         case TREENODE_OP:
-            if (curr->data.opOrVar == '^')
-                printf("%c", curr->data.opOrVar);
+            if (curr->data.symbol == '^')
+                printf("%c", curr->data.symbol);
             else
-                printf(" %c ", curr->data.opOrVar);
+                printf(" %c ", curr->data.symbol);
             break;
         case TREENODE_VAR:
-            printf("%c", curr->data.opOrVar);
+            printf("%c", curr->data.symbol);
             break;
         default:
             fprintf(stderr, "Invalid TreeNode Type");
@@ -317,7 +317,7 @@ double calculate(TreeNode* curr, double independent)
     if (curr->type != TREENODE_NUMBER)
     {
         double temp;
-        switch (curr->data.opOrVar)
+        switch (curr->data.symbol)
         {
             case '+':
                 value = calculate(curr->left, independent)
@@ -704,7 +704,7 @@ void printTreeNodeData(TreeNode* node)
     if (TREENODE_NUMBER == node->type)
         printf("%d ", (int)node->data.number);
     else
-        printf("%c ", node->data.opOrVar);
+        printf("%c ", node->data.symbol);
 }
 
 void printTokenList(TreeNode** tokenList, int tokenCount)
@@ -762,18 +762,18 @@ TreeNode* buildFunctionTreeFromInfixList(TreeNode** tokens, int tokenCount)
         {
             nodeStack[nodeStackSize++] = copyTreeNode(tokens[i]);
         }
-        else if ('(' == tokens[i]->data.opOrVar)
+        else if ('(' == tokens[i]->data.symbol)
         {
             opStack[opStackSize++] = tokens[i];
         }
         else if (TREENODE_OP == tokens[i]->type)
         {
             while (opStackSize &&
-                '(' != opStack[opStackSize - 1]->data.opOrVar &&
-                (('^' != tokens[i]->data.opOrVar &&
-                    p[(int)opStack[opStackSize - 1]->data.opOrVar] >= p[(int)tokens[i]->data.opOrVar]) ||
-                    ('^' == tokens[i]->data.opOrVar &&
-                        p[(int)opStack[opStackSize - 1]->data.opOrVar] > p[(int)tokens[i]->data.opOrVar])))
+                '(' != opStack[opStackSize - 1]->data.symbol &&
+                (('^' != tokens[i]->data.symbol &&
+                    p[(int)opStack[opStackSize - 1]->data.symbol] >= p[(int)tokens[i]->data.symbol]) ||
+                    ('^' == tokens[i]->data.symbol &&
+                        p[(int)opStack[opStackSize - 1]->data.symbol] > p[(int)tokens[i]->data.symbol])))
             {
                 curr = copyTreeNode(opStack[--opStackSize]);
                 right = nodeStack[--nodeStackSize];
@@ -786,9 +786,9 @@ TreeNode* buildFunctionTreeFromInfixList(TreeNode** tokens, int tokenCount)
             }
             opStack[opStackSize++] = tokens[i];
         }
-        else if (')' == tokens[i]->data.opOrVar)
+        else if (')' == tokens[i]->data.symbol)
         {
-            while (opStackSize && ('(' != opStack[opStackSize - 1]->data.opOrVar))
+            while (opStackSize && ('(' != opStack[opStackSize - 1]->data.symbol))
             {
                 curr = copyTreeNode(opStack[--opStackSize]);
                 right = nodeStack[--nodeStackSize];
@@ -834,7 +834,7 @@ TreeNode** createTokensFromInfix(Function* function, int* tokenCount)
     }
 
     // Wrapping Parentheses
-    parens.opOrVar = '(';
+    parens.symbol = '(';
     tokens[0] = createTreeNode(parens, TREENODE_PARENS, NULL, NULL);
 
     if (NULL == tokens[0])
@@ -858,23 +858,23 @@ TreeNode** createTokensFromInfix(Function* function, int* tokenCount)
             case TREENODE_OP:
             case TREENODE_PARENS:
                 tokenLength = 1;
-                data.opOrVar = function->buf[i];
+                data.symbol = function->buf[i];
                 break;
             case TREENODE_VAR:
                 if ('-' == function->buf[i])
                 {
                     union Data tempNeg, tempMult;
                     tempNeg.number = -1;
-                    tempMult.opOrVar = '*';
+                    tempMult.symbol = '*';
                     tokens[(*tokenCount)++] = createTreeNode(tempNeg, TREENODE_NUMBER, NULL, NULL);
                     tokens[(*tokenCount)++] = createTreeNode(tempMult, TREENODE_OP, NULL, NULL);
                     tokenLength = 2;
-                    data.opOrVar = function->buf[i + 1];
+                    data.symbol = function->buf[i + 1];
                 }
                 else
                 {
                     tokenLength = 1;
-                    data.opOrVar = function->buf[i];
+                    data.symbol = function->buf[i];
                 }
                 break;
             case TREENODE_NUMBER:
@@ -915,7 +915,7 @@ TreeNode** createTokensFromInfix(Function* function, int* tokenCount)
             while (TREENODE_OTHER == (type = getTokenizeType(function, tempIndex++)));
             if (TREENODE_VAR == type || '(' == function->buf[tempIndex - 1])
             {
-                tempData.opOrVar = '*';
+                tempData.symbol = '*';
                 tokens[(*tokenCount)++] = createTreeNode(tempData, TREENODE_OP, NULL, NULL);
             }
             else if (TREENODE_OP != type && TREENODE_PARENS != type && TREENODE_FAIL != type)
@@ -926,7 +926,7 @@ TreeNode** createTokensFromInfix(Function* function, int* tokenCount)
         i += tokenLength - 1;
     }
     // Wrapping Parentheses
-    parens.opOrVar = ')';
+    parens.symbol = ')';
     tokens[(*tokenCount)++] = createTreeNode(parens, TREENODE_PARENS, NULL, NULL);
 
     if (*tokenCount < 3)
@@ -974,7 +974,7 @@ void setVarOrNumber(char* varOrNumber, TreeNode* nodeToSet)
         nodeToSet->type = TREENODE_NUMBER;
     }
     else {
-        nodeToSet->data.opOrVar = varOrNumber[0];
+        nodeToSet->data.symbol = varOrNumber[0];
         nodeToSet->type = TREENODE_VAR;
     }
 }
@@ -1007,7 +1007,7 @@ TreeNode* buildFunctionTree(char** function, int* termIndex)
         case '*':
         case '/':
         case '^':
-            curr->data.opOrVar = function[*termIndex][0];
+            curr->data.symbol = function[*termIndex][0];
             curr->type = TREENODE_OP;
 
             // Move on to next term
