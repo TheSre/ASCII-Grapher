@@ -31,6 +31,11 @@ typedef enum TreeNodeType
     TREENODE_OTHER = 5
 } TreeNodeType;
 
+typedef enum SyntaxError
+{
+    SYNTAX_ERROR_MISSING_OP
+} SyntaxError;
+
 typedef struct TreeNode
 {
     union Data       data;
@@ -66,6 +71,53 @@ int fixedRatio = 0;
 void usage()
 {
     printf("Usage: {gsgc} xMin xMax [ yMin yMax ]\n");
+    exit(EXIT_SUCCESS);
+}
+
+void LogSyntaxError(Function* pFunction, SyntaxError err, int index)
+{
+    char buffer[12];
+    int start, end, len;
+
+    if (0 > (start = index - 5))
+        start = 0;
+
+    if ((int)pFunction->length <= (end = index + 5))
+        end = pFunction->length - 1;
+
+    len = (end - start) + 1;
+    if (len <= 0)
+    {
+        fprintf(stderr, "Error printing syntax error");
+        exit(EXIT_FAILURE);
+    }
+
+    strncpy(buffer, &pFunction->buf[start], len);
+    buffer[len] = '\0';
+
+    printf("Syntax Error:\n");
+    printf(buffer);
+    printf("\n");
+    for (int i = start; i < start + len; i++)
+    {
+        if (i == index)
+            printf("^");
+        else
+            printf(" ");
+    }
+    printf("\n");
+
+    switch (err)
+    {
+        case SYNTAX_ERROR_MISSING_OP:
+            printf("Expected operator at position %d", index + 1);
+            break;
+        default:
+            fprintf(stderr, "Invalid Syntax Error Code");
+            exit(EXIT_FAILURE);
+    }
+    printf("\n");
+
     exit(EXIT_SUCCESS);
 }
 
@@ -130,21 +182,21 @@ void printTree(TreeNode* curr)
 
     switch (curr->type)
     {
-    case TREENODE_NUMBER:
-        printf("%d", (int)curr->data.number);
-        break;
-    case TREENODE_OP:
-        if (curr->data.opOrVar == '^')
+        case TREENODE_NUMBER:
+            printf("%d", (int)curr->data.number);
+            break;
+        case TREENODE_OP:
+            if (curr->data.opOrVar == '^')
+                printf("%c", curr->data.opOrVar);
+            else
+                printf(" %c ", curr->data.opOrVar);
+            break;
+        case TREENODE_VAR:
             printf("%c", curr->data.opOrVar);
-        else if (curr->data.opOrVar != '*' || (NULL != curr->right && curr->right->type == TREENODE_NUMBER))
-            printf(" %c ", curr->data.opOrVar);
-        break;
-    case TREENODE_VAR:
-        printf("%c", curr->data.opOrVar);
-        break;
-    default:
-        fprintf(stderr, "Invalid TreeNode Type");
-        exit(EXIT_FAILURE);
+            break;
+        default:
+            fprintf(stderr, "Invalid TreeNode Type");
+            exit(EXIT_FAILURE);
     }
 
     printTree(curr->right);
@@ -264,35 +316,36 @@ double calculate(TreeNode* curr, double independent)
     double value = 0;
     if (curr->type != TREENODE_NUMBER)
     {
+        double temp;
         switch (curr->data.opOrVar)
         {
-        case '+':
-            value = calculate(curr->left, independent)
-                + calculate(curr->right, independent);
-            break;
-            // below assumes left-right storage for subtraction
-        case '-':
-            value = calculate(curr->left, independent)
-                - calculate(curr->right, independent);
-            break;
-        case '*':
-            value = calculate(curr->left, independent)
-                * calculate(curr->right, independent);
-            break;
-            // below assumes left/right storage for division
-        case '/':
-            value = calculate(curr->left, independent)
-                / calculate(curr->right, independent);
-            break;
-            // below assumes left^right storage for exponentials
-        case '^':
-            value = pow(calculate(curr->left, independent),
-                calculate(curr->right, independent));
-            break;
-            // variable case, currently all non-op non-num values will be treated 
-            // as indep. var
-        default:
-            value = independent;
+            case '+':
+                value = calculate(curr->left, independent)
+                    + calculate(curr->right, independent);
+                break;
+                // below assumes left-right storage for subtraction
+            case '-':
+                value = calculate(curr->left, independent)
+                    - calculate(curr->right, independent);
+                break;
+            case '*':
+                value = calculate(curr->left, independent)
+                    * calculate(curr->right, independent);
+                break;
+                // below assumes left/right storage for division
+            case '/':
+                value = calculate(curr->left, independent)
+                    / calculate(curr->right, independent);
+                break;
+                // below assumes left^right storage for exponentials
+            case '^':
+                value = pow(calculate(curr->left, independent),
+                    calculate(curr->right, independent));
+                break;
+                // variable case, currently all non-op non-num values will be treated 
+                // as indep. var
+            default:
+                value = independent;
         }
     }
     else
@@ -591,34 +644,34 @@ TreeNodeType getTokenizeType(Function* function, int index)
 
     switch (function->buf[index])
     {
-    case '+':
-    case '*':
-    case '/':
-    case '^':
-        return TREENODE_OP;
-    case '-':
-        tempIndex = index;
-        while (TREENODE_OTHER == (type = getTokenizeType(function, --tempIndex)));
-        if (TREENODE_VAR == type || TREENODE_NUMBER == type || ')' == function->buf[tempIndex])
-        {
+        case '+':
+        case '*':
+        case '/':
+        case '^':
             return TREENODE_OP;
-        }
-        else
-        {
+        case '-':
             tempIndex = index;
-            while (TREENODE_OTHER != (type = getTokenizeType(function, ++tempIndex)));
-            return type;
-        }
+            while (TREENODE_OTHER == (type = getTokenizeType(function, --tempIndex)));
+            if (TREENODE_VAR == type || TREENODE_NUMBER == type || ')' == function->buf[tempIndex])
+            {
+                return TREENODE_OP;
+            }
+            else
+            {
+                tempIndex = index;
+                while (TREENODE_OTHER == (type = getTokenizeType(function, ++tempIndex)));
+                return type;
+            }
 
-    default:
-        if (isalpha(function->buf[index]) && ' ' != function->buf[index])
-            return TREENODE_VAR;
-        else if (isdigit(function->buf[index]))
-            return TREENODE_NUMBER;
-        else if ('(' == function->buf[index] || ')' == function->buf[index])
-            return TREENODE_PARENS;
-        else
-            return TREENODE_OTHER;
+        default:
+            if (isalpha(function->buf[index]) && ' ' != function->buf[index])
+                return TREENODE_VAR;
+            else if (isdigit(function->buf[index]))
+                return TREENODE_NUMBER;
+            else if ('(' == function->buf[index] || ')' == function->buf[index])
+                return TREENODE_PARENS;
+            else
+                return TREENODE_OTHER;
     }
 }
 
@@ -768,7 +821,7 @@ TreeNode** createTokensFromInfix(Function* function, int* tokenCount)
     TreeNode** temp = NULL;
     union Data parens;
 
-    maxTokens = function->length + 3;
+    maxTokens = 2 * function->length + 3;
 
     // TODO: free tokens & buffer
     tokens = calloc(maxTokens, sizeof(TreeNode*));
@@ -794,40 +847,54 @@ TreeNode** createTokensFromInfix(Function* function, int* tokenCount)
     {
         TreeNodeType type = getTokenizeType(function, i);
         int tokenLength;
-        int temp;
+        int ret, tempIndex;
         union Data data;
         memset(buffer, '\0', function->length + 1);
 
-        switch (type) {
-        case TREENODE_OTHER:
-            continue;
-        case TREENODE_VAR:
-            // tokenLength = getTokenizeLength(function, i); // Dreams of making multi-character variables
-            // strncpy(data.opOrVar, &function->buf[i], tokenLength);
-            // break;
-        case TREENODE_OP:
-        case TREENODE_PARENS:
-            tokenLength = 1;
-            data.opOrVar = function->buf[i];
-            break;
-        case TREENODE_NUMBER:
-            tokenLength = getTokenizeLength(function, i);
-            strncpy(buffer, &function->buf[i], tokenLength);
-            buffer[tokenLength] = '\0';
-            temp = sscanf(buffer, "%lf", &data.number);
-            if (temp != 1)
-            {
-                fprintf(stderr, "Error copying token to TreeNode");
-                exit(EXIT_FAILURE);
-            }
+        switch (type)
+        {
+            case TREENODE_OTHER:
+                continue;
+            case TREENODE_OP:
+            case TREENODE_PARENS:
+                tokenLength = 1;
+                data.opOrVar = function->buf[i];
+                break;
+            case TREENODE_VAR:
+                if ('-' == function->buf[i])
+                {
+                    union Data tempNeg, tempMult;
+                    tempNeg.number = -1;
+                    tempMult.opOrVar = '*';
+                    tokens[(*tokenCount)++] = createTreeNode(tempNeg, TREENODE_NUMBER, NULL, NULL);
+                    tokens[(*tokenCount)++] = createTreeNode(tempMult, TREENODE_OP, NULL, NULL);
+                    tokenLength = 2;
+                    data.opOrVar = function->buf[i + 1];
+                }
+                else
+                {
+                    tokenLength = 1;
+                    data.opOrVar = function->buf[i];
+                }
+                break;
+            case TREENODE_NUMBER:
+                tokenLength = getTokenizeLength(function, i);
+                strncpy(buffer, &function->buf[i], tokenLength);
+                buffer[tokenLength] = '\0';
+                ret = sscanf(buffer, "%lf", &data.number);
+                if (ret != 1)
+                {
+                    fprintf(stderr, "Error copying token to TreeNode");
+                    exit(EXIT_FAILURE);
+                }
 
-            break;
-        default:
-            fprintf(stderr, "Unhandled TreeNodeType at input index %d", i);
-            exit(EXIT_FAILURE);
+                break;
+            default:
+                fprintf(stderr, "Unhandled TreeNodeType at input index %d", i);
+                exit(EXIT_FAILURE);
         }
 
-        if (*tokenCount == maxTokens)
+        if (*tokenCount > maxTokens)
         {
             fprintf(stderr, "Too many tokens created from input: %d", *tokenCount + 1);
             exit(EXIT_FAILURE);
@@ -840,11 +907,33 @@ TreeNode** createTokensFromInfix(Function* function, int* tokenCount)
         }
         // TODO: free
         tokens[(*tokenCount)++] = createTreeNode(data, type, NULL, NULL);
+
+        if (TREENODE_NUMBER == type)
+        {
+            union Data tempData;
+            tempIndex = i + tokenLength;
+            while (TREENODE_OTHER == (type = getTokenizeType(function, tempIndex++)));
+            if (TREENODE_VAR == type || '(' == function->buf[tempIndex - 1])
+            {
+                tempData.opOrVar = '*';
+                tokens[(*tokenCount)++] = createTreeNode(tempData, TREENODE_OP, NULL, NULL);
+            }
+            else if (TREENODE_OP != type && TREENODE_PARENS != type && TREENODE_FAIL != type)
+            {
+                LogSyntaxError(function, SYNTAX_ERROR_MISSING_OP, tempIndex - 1);
+            }
+        }
         i += tokenLength - 1;
     }
     // Wrapping Parentheses
     parens.opOrVar = ')';
     tokens[(*tokenCount)++] = createTreeNode(parens, TREENODE_PARENS, NULL, NULL);
+
+    if (*tokenCount < 3)
+    {
+        fprintf(stderr, "No input");
+        exit(EXIT_SUCCESS);
+    }
 
     temp = realloc(tokens, (*tokenCount) * sizeof(TreeNode*));
 
@@ -899,7 +988,7 @@ TreeNode* buildFunctionTree(char** function, int* termIndex)
     TreeNode* curr = malloc(sizeof(TreeNode));
 
     if (NULL == curr) {
-        fprintf(stderr, "malloc error");
+        fprintf(stderr, "Malloc error");
         exit(EXIT_FAILURE);
     }
 
@@ -913,28 +1002,28 @@ TreeNode* buildFunctionTree(char** function, int* termIndex)
     }
 
     switch (function[*termIndex][0]) {
-    case '+':
-    case '-':
-    case '*':
-    case '/':
-    case '^':
-        curr->data.opOrVar = function[*termIndex][0];
-        curr->type = TREENODE_OP;
+        case '+':
+        case '-':
+        case '*':
+        case '/':
+        case '^':
+            curr->data.opOrVar = function[*termIndex][0];
+            curr->type = TREENODE_OP;
 
-        // Move on to next term
-        ++(*termIndex);
-        curr->left = buildFunctionTree(function, termIndex);
+            // Move on to next term
+            ++(*termIndex);
+            curr->left = buildFunctionTree(function, termIndex);
 
-        // Move on to next term
-        ++(*termIndex);
-        curr->right = buildFunctionTree(function, termIndex);
-        break;
-    default:
-        // Is a variable or number in this case
-        setVarOrNumber(function[*termIndex], curr);
-        curr->left = NULL;
-        curr->right = NULL;
-        break;
+            // Move on to next term
+            ++(*termIndex);
+            curr->right = buildFunctionTree(function, termIndex);
+            break;
+        default:
+            // Is a variable or number in this case
+            setVarOrNumber(function[*termIndex], curr);
+            curr->left = NULL;
+            curr->right = NULL;
+            break;
     }
     return curr;
 }
@@ -998,8 +1087,7 @@ void getInput(Function* function)
     int i;
     char* temp = NULL;
 
-    printf("Please enter: \n");
-    printf("\ta function to graph: ");
+    printf("Please enter a function to graph:\n\t>");
 
     function->buf = calloc(MAX_INPUT_SIZE, sizeof(char));
 
@@ -1068,38 +1156,38 @@ int parseArguments(int argc, char** argv, Function* pFunction)
 
     switch (argc)
     {
-    case 1:
-        return ret;
-    case 2:
-        ret = 0;
-        getInputFromCommandLine(argv[++i], pFunction);
-        return ret;
-    case 3:
-        xRange.low = yRange.low = strtol(argv[++i], NULL, 10);
-        xRange.high = yRange.high = strtol(argv[++i], NULL, 10);
-        break;
-    case 4:
-        ret = 0;
-        getInputFromCommandLine(argv[++i], pFunction);
-        xRange.low = yRange.low = strtol(argv[++i], NULL, 10);
-        xRange.high = yRange.high = strtol(argv[++i], NULL, 10);
-        break;
-    case 5:
-        xRange.low = strtol(argv[++i], NULL, 10);
-        xRange.high = strtol(argv[++i], NULL, 10);
-        yRange.low = strtol(argv[++i], NULL, 10);
-        yRange.high = strtol(argv[++i], NULL, 10);
-        break;
-    case 6:
-        ret = 0;
-        getInputFromCommandLine(argv[++i], pFunction);
-        xRange.low = strtol(argv[++i], NULL, 10);
-        xRange.high = strtol(argv[++i], NULL, 10);
-        yRange.low = strtol(argv[++i], NULL, 10);
-        yRange.high = strtol(argv[++i], NULL, 10);
-        break;
-    default:
-        usage();
+        case 1:
+            return ret;
+        case 2:
+            ret = 0;
+            getInputFromCommandLine(argv[++i], pFunction);
+            return ret;
+        case 3:
+            xRange.low = yRange.low = strtol(argv[++i], NULL, 10);
+            xRange.high = yRange.high = strtol(argv[++i], NULL, 10);
+            break;
+        case 4:
+            ret = 0;
+            getInputFromCommandLine(argv[++i], pFunction);
+            xRange.low = yRange.low = strtol(argv[++i], NULL, 10);
+            xRange.high = yRange.high = strtol(argv[++i], NULL, 10);
+            break;
+        case 5:
+            xRange.low = strtol(argv[++i], NULL, 10);
+            xRange.high = strtol(argv[++i], NULL, 10);
+            yRange.low = strtol(argv[++i], NULL, 10);
+            yRange.high = strtol(argv[++i], NULL, 10);
+            break;
+        case 6:
+            ret = 0;
+            getInputFromCommandLine(argv[++i], pFunction);
+            xRange.low = strtol(argv[++i], NULL, 10);
+            xRange.high = strtol(argv[++i], NULL, 10);
+            yRange.low = strtol(argv[++i], NULL, 10);
+            yRange.high = strtol(argv[++i], NULL, 10);
+            break;
+        default:
+            usage();
     }
 
     if (LONG_MIN == yRange.low ||
